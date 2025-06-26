@@ -1,14 +1,14 @@
 // app/index.tsx
-import { View, Text, StyleSheet, Button } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import React from 'react';
 import { Link } from 'expo-router';
 
 export default function WelcomeScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Witaj w Collectsy!</Text>
-      <Text style={styles.subtitle}>Zarządzaj swoją kolekcją.</Text>
-      
+      <Text style={styles.title}>Collectsy</Text>
+      <Text style={styles.subtitle}>Wszystkie Twoje kolekcje w jednym miejscu.</Text>
+
       <Link href="/login" asChild>
         <Pressable style={styles.button}>
           <Text style={styles.buttonText}>Zaloguj się</Text>
@@ -24,37 +24,10 @@ export default function WelcomeScreen() {
   );
 }
 
-// WAŻNE: Wklej poniżej te style
-import { Pressable } from 'react-native'; // Dodaj ten import na górze
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-  },
-  subtitle: {
-    fontSize: 18,
-    color: 'gray',
-    marginBottom: 48,
-  },
-  button: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 12,
-    paddingHorizontal: 32,
-    borderRadius: 8,
-    alignItems: 'center',
-    width: '80%',
-    marginBottom: 16,
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 16, backgroundColor: '#f5f5f5' },
+  title: { fontSize: 48, fontWeight: 'bold', color: '#333' },
+  subtitle: { fontSize: 18, color: 'gray', marginBottom: 64, textAlign: 'center' },
+  button: { backgroundColor: '#007AFF', paddingVertical: 14, paddingHorizontal: 32, borderRadius: 10, alignItems: 'center', width: '90%', marginBottom: 16 },
+  buttonText: { color: 'white', fontSize: 18, fontWeight: 'bold' },
 });

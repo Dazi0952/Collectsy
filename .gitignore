@@ -36,4 +36,4 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
-/src/api/firebase.ts
+/src/api/supabase.ts
