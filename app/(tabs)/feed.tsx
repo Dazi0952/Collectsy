@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../src/api/supabase';
 import { Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { Colors , FontSize , Spacing } from '../../src/constants/theme'
 
 
 
@@ -91,26 +92,29 @@ export default function FeedScreen() {
 // Nowe, dopasowane style dla ekranu Feed
 const styles = StyleSheet.create({
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: Colors.background },
   itemContainer: {
     flex: 1,
-    margin: 8,
-    borderRadius: 8,
-    overflow: 'hidden',
-    backgroundColor: '#f0f0f0',
-    elevation: 3, // Cień na Androidzie
-    shadowColor: '#000', // Cień na iOS
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    margin: Spacing.small,
+    borderRadius: 12,
+    backgroundColor: Colors.background,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
     shadowRadius: 4,
+    elevation: 2,
   },
   itemImage: {
     width: '100%',
-    aspectRatio: 1, // Kwadratowy obrazek
+    aspectRatio: 1,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
   },
   itemName: {
     fontWeight: '600',
-    padding: 8,
+    padding: Spacing.small,
+    color: Colors.text,
+    fontSize: FontSize.subheadline
   },
   collectionIcon: {
     position: 'absolute',

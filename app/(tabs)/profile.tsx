@@ -1,11 +1,12 @@
 // app/(tabs)/profile.tsx - WERSJA Z WYŚWIETLANIEM KOLEKCJI
 import { View, Text, Button, StyleSheet, FlatList, Image, ActivityIndicator, Alert, Pressable } from 'react-native';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../src/api/supabase';
 import { useAuth } from '../../src/hooks/useAuth';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { Colors, FontSize, Spacing } from '../../src/constants/theme';
 
 // Definicja typu dla naszych przedmiotów, przyda się dla TypeScript
 type Item = {
@@ -48,6 +49,12 @@ export default function ProfileScreen() {
     setLoading(false);
   };
 
+  useFocusEffect(
+    useCallback(() => {
+      if (user) fetchUserItems();
+    }, [user])
+  );
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.replace('/login'); 
@@ -60,7 +67,24 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.container}>
-      <Button title="Wyloguj się" onPress={handleLogout} />
+      {/* === NOWY NAGŁÓWEK PROFILU === */}
+      <View style={styles.profileHeader}>
+        <Image 
+          source={{ uri: `https://api.dicebear.com/7.x/initials/png?seed=${user?.email}` }} 
+          style={styles.avatar} 
+        />
+        <View style={styles.statsContainer}>
+          <View style={styles.stat}>
+            <Text style={styles.statNumber}>{items.length}</Text>
+            <Text style={styles.statLabel}>Przedmiotów</Text>
+          </View>
+          {/* Tutaj można dodać więcej statystyk */}
+        </View>
+        <Pressable onPress={() => supabase.auth.signOut()} style={styles.logoutButton}>
+          <Ionicons name="log-out-outline" size={24} color={Colors.textSecondary} />
+        </Pressable>
+      </View>
+      <Text style={styles.email}>{user?.email}</Text>
 
       <FlatList
         data={items}
@@ -99,9 +123,29 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: Colors.background },
   header: { fontSize: 24, fontWeight: 'bold', padding: 16 },
+  profileHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.medium,
+    paddingTop: Spacing.medium,
+  },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  avatar: { width: 80, height: 80, borderRadius: 40 },
+  statsContainer: { flexDirection: 'row', flex: 1, justifyContent: 'center' },
+  stat: { alignItems: 'center', marginHorizontal: Spacing.medium },
+  statNumber: { fontSize: FontSize.headline, fontWeight: 'bold', color: Colors.text },
+  statLabel: { fontSize: FontSize.subheadline, color: Colors.textSecondary },
+  logoutButton: { padding: Spacing.small },
+  email: {
+    fontSize: FontSize.body,
+    fontWeight: '600',
+    color: Colors.text,
+    paddingHorizontal: Spacing.medium,
+    paddingBottom: Spacing.medium,
+  },
   itemContainer: {
     flex: 1,
     aspectRatio: 1, // Utrzymuje kwadratowy kształt

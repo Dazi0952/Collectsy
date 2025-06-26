@@ -2,6 +2,7 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { Ionicons } from '@expo/vector-icons';
+import { Colors, FontSize, Spacing } from '../../src/constants/theme';
 
 // Możesz zaimportować ikony, jeśli masz zainstalowane @expo/vector-icons
 // import { TabBarIcon } from '@/components/navigation/TabBarIcon';
@@ -10,9 +11,12 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#007AFF', // Kolor aktywnej zakładki
-        headerShown: true, // Pokażemy nagłówki na ekranach
-      }}>
+    tabBarActiveTintColor: Colors.primary,
+    tabBarInactiveTintColor: Colors.textSecondary,
+    tabBarStyle: { backgroundColor: Colors.background },
+    headerStyle: { backgroundColor: Colors.background },
+    headerTitleStyle: { color: Colors.text },
+  }}>
       <Tabs.Screen
         name="profile"
         options={{
