@@ -80,9 +80,6 @@ export default function ProfileScreen() {
           </View>
           {/* Tutaj można dodać więcej statystyk */}
         </View>
-        <Pressable onPress={() => supabase.auth.signOut()} style={styles.logoutButton}>
-          <Ionicons name="log-out-outline" size={24} color={Colors.textSecondary} />
-        </Pressable>
       </View>
       <Text style={styles.email}>{user?.email}</Text>
 

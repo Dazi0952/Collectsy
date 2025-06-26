@@ -39,6 +39,7 @@ export default function RootLayout() {
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} /> 
       <Stack.Screen name="register" options={{ title: 'Stwórz konto', presentation: 'modal' }} />
       <Stack.Screen name="login" options={{ title: 'Zaloguj się', presentation: 'modal' }} />
+      <Stack.Screen name="settings" options={{ presentation: 'modal' }} />
     </Stack>
   );
 }
