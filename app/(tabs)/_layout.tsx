@@ -1,6 +1,7 @@
 // app/(tabs)/_layout.tsx
 import { Tabs } from 'expo-router';
 import React from 'react';
+import { Ionicons } from '@expo/vector-icons';
 
 // Możesz zaimportować ikony, jeśli masz zainstalowane @expo/vector-icons
 // import { TabBarIcon } from '@/components/navigation/TabBarIcon';
@@ -17,6 +18,15 @@ export default function TabLayout() {
         options={{
             title: 'Mój Profil',
             }}
+      />
+      <Tabs.Screen
+        name="feed"
+        options={{
+          title: 'Odkrywaj',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'compass' : 'compass-outline'} size={24} color={color} />
+          ),
+        }}
       />
       {<Tabs.Screen
         name="add"
