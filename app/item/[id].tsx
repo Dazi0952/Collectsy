@@ -81,8 +81,9 @@ export default function ItemDetailScreen() {
 
   // === LOGIKA EDYCJI (na razie pusta) ===
   const handleEdit = () => {
-    // W przyszłości: nawiguj do ekranu edycji, przekazując ID przedmiotu
-    Alert.alert("Do zrobienia", "Ekran edycji nie jest jeszcze zaimplementowany.");
+    if (!item) return;
+  // Nawiguj do ekranu edycji, przekazując ID jako parametr
+  router.push(`/item/edit?id=${item.id}`);
   };
 
   if (loading) return <ActivityIndicator size="large" style={styles.centered} />;
@@ -92,49 +93,56 @@ export default function ItemDetailScreen() {
   const isOwner = user?.id === item.user_id;
 
   return (
-    <ScrollView style={styles.container}>
-      <Stack.Screen options={{ title: item.name }} />
-      
-      <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={styles.imageCarousel}>
-        {item.image_urls.map((url, index) => (
-          <Image key={index} source={{ uri: url }} style={styles.image} />
-        ))}
-        {isOwner && (
-        <View style={styles.managementContainer}>
-          <Button title="Edytuj" onPress={handleEdit} />
-          <Button title="Usuń" onPress={handleDelete} color="red" />
-        </View>
-      )}
-      </ScrollView>
-
-      {/* === NOWA, ROZBUDOWANA SEKCJA ZE SZCZEGÓŁAMI === */}
-      <View style={styles.detailsContainer}>
-        <Text style={styles.title}>{item.name}</Text>
-        
-        {/* Wyświetlanie ceny, jeśli przedmiot jest na sprzedaż */}
-        {item.is_for_sale && item.price && (
-          <Text style={styles.price}>{item.price.toFixed(2)} PLN</Text>
-        )}
-
-        <Text style={styles.description}>{item.description}</Text>
-        
-        <View style={styles.metaContainer}>
-          {item.author && (
-            <View style={styles.metaItem}>
-              <Text style={styles.metaLabel}>Autor:</Text>
-              <Text style={styles.metaValue}>{item.author}</Text>
-            </View>
-          )}
-          {item.year && (
-            <View style={styles.metaItem}>
-              <Text style={styles.metaLabel}>Rok:</Text>
-              <Text style={styles.metaValue}>{item.year}</Text>
-            </View>
-          )}
-        </View>
-      </View>
+  <ScrollView 
+    style={styles.container} 
+    contentContainerStyle={styles.contentContainer}
+  >
+    {/* Konfiguracja nagłówka - to jest OK */}
+    <Stack.Screen options={{ title: item.name }} />
+    
+    {/* Karuzela zdjęć - teraz jest samodzielna */}
+    <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={styles.imageCarousel}>
+      {item.image_urls.map((url, index) => (
+        <Image key={index} source={{ uri: url }} style={styles.image} />
+      ))}
     </ScrollView>
-  );
+
+    {/* Kontener ze wszystkimi szczegółami tekstowymi */}
+    <View style={styles.detailsContainer}>
+      <Text style={styles.title}>{item.name}</Text>
+      
+      {item.is_for_sale && item.price && (
+        <Text style={styles.price}>{item.price.toFixed(2)} PLN</Text>
+      )}
+
+      <Text style={styles.description}>{item.description}</Text>
+      
+      <View style={styles.metaContainer}>
+        {item.author && (
+          <View style={styles.metaItem}>
+            <Text style={styles.metaLabel}>Autor:</Text>
+            <Text style={styles.metaValue}>{item.author}</Text>
+          </View>
+        )}
+        {item.year && (
+          <View style={styles.metaItem}>
+            <Text style={styles.metaLabel}>Rok:</Text>
+            <Text style={styles.metaValue}>{item.year}</Text>
+          </View>
+        )}
+      </View>
+    </View>
+
+    {/* === SEKCJA ZARZĄDZANIA W POPRAWNYM MIEJSCU === */}
+    {/* Jest na głównym poziomie, na samym dole */}
+    {isOwner && (
+      <View style={styles.managementContainer}>
+        <Button title="Edytuj" onPress={handleEdit} />
+        <Button title="Usuń" onPress={handleDelete} color="red" />
+      </View>
+    )}
+  </ScrollView>
+);
 }
 
 const { width } = Dimensions.get('window');
@@ -193,5 +201,8 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#eee',
     marginTop: 20,
+  },
+  contentContainer: {
+    paddingBottom: 50, // Dodaje margines na dole, aby nic nie było ucięte
   },
 });
