@@ -6,7 +6,8 @@ import { useAuth } from '../../src/hooks/useAuth';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, FontSize, Spacing } from '../../src/constants/theme';
+import { Colors, FontSize, Spacing, lightTheme, darkTheme, } from '../../src/constants/theme';
+import { useTheme } from '../../src/context/ThemeContext';
 
 // Definicja typu dla naszych przedmiotów, przyda się dla TypeScript
 type Item = {
@@ -20,6 +21,8 @@ export default function ProfileScreen() {
   const router = useRouter();
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
+  const { theme } = useTheme();
+  const colors = theme === 'light' ? lightTheme : darkTheme;
 
   useEffect(() => {
     // Ta funkcja uruchomi się, gdy komponent się załaduje
@@ -66,7 +69,7 @@ export default function ProfileScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* === NOWY NAGŁÓWEK PROFILU === */}
       <View style={styles.profileHeader}>
         <Image 
@@ -75,13 +78,13 @@ export default function ProfileScreen() {
         />
         <View style={styles.statsContainer}>
           <View style={styles.stat}>
-            <Text style={styles.statNumber}>{items.length}</Text>
-            <Text style={styles.statLabel}>Przedmiotów</Text>
+            <Text style={[styles.statNumber, { color: colors.text }]}>{items.length}</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Przedmiotów</Text>
           </View>
           {/* Tutaj można dodać więcej statystyk */}
         </View>
       </View>
-      <Text style={styles.email}>{user?.email}</Text>
+      <Text style={[styles.email, { color: colors.text }]}>{user?.email}</Text>
 
       <FlatList
         data={items}

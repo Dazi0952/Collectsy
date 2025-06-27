@@ -22,3 +22,36 @@ export const Spacing = {
   medium: 16,
   large: 24,
 };
+
+const palette = {
+  blue: '#007AFF',
+  grayLight: '#F5F5F7',
+  grayMedium: '#E5E5EA',
+  grayDark: '#8A8A8E',
+  white: '#FFFFFF',
+  black: '#1C1C1E',
+  red: '#FF3B30',
+  // Ciemne kolory
+  darkSurface: '#1C1C1E',
+  darkBackground: '#000000',
+};
+
+export const lightTheme = {
+  primary: palette.blue,
+  background: palette.white,
+  surface: palette.grayLight,
+  text: palette.black,
+  textSecondary: palette.grayDark,
+  border: palette.grayMedium,
+  danger: palette.red,
+};
+
+export const darkTheme = {
+  primary: palette.blue,
+  background: palette.darkBackground,
+  surface: palette.darkSurface,
+  text: palette.white,
+  textSecondary: palette.grayDark,
+  border: palette.darkSurface,
+  danger: palette.red,
+};
