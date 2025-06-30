@@ -1,12 +1,17 @@
 // app/(tabs)/add.tsx - PEŁNA, ROZBUDOWANA WERSJA
-import { View, Text, TextInput, Button, StyleSheet, Alert, Image, ScrollView, Switch } from 'react-native';
+import { View, Text, TextInput, Button, StyleSheet, Alert, Image, ScrollView, Switch, Pressable } from 'react-native';
 import React, { useState } from 'react';
 import { supabase } from '../../src/api/supabase';
 import { useAuth } from '../../src/hooks/useAuth';
-import { useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import { useTheme } from '../../src/context/ThemeContext';
+import { lightTheme, darkTheme, Spacing, FontSize } from '../../src/constants/theme';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function AddItemScreen() {
+  const { theme } = useTheme();
+  const colors = theme === 'light' ? lightTheme : darkTheme;
   const { user } = useAuth();
   const router = useRouter();
 
@@ -88,50 +93,85 @@ export default function AddItemScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 50 }}>
-      {/* === NOWE POLA W FORMULARZU === */}
-      <Text style={styles.label}>Nazwa przedmiotu *</Text>
-      <TextInput style={styles.input} value={name} onChangeText={setName} />
+    <ScrollView 
+      style={[styles.container, { backgroundColor: colors.background }]} 
+      contentContainerStyle={{ paddingBottom: 50 }}
+      keyboardShouldPersistTaps="handled"
+    >
+      <Stack.Screen options={{ 
+        title: 'Dodaj nowy przedmiot',
+        headerStyle: { backgroundColor: colors.background },
+        headerTitleStyle: { color: colors.text }
+      }}/>
 
-      <Text style={styles.label}>Opis</Text>
-      <TextInput style={styles.input} value={description} onChangeText={setDescription} multiline />
-      
-      <Text style={styles.label}>Autor</Text>
-      <TextInput style={styles.input} value={author} onChangeText={setAuthor} />
-
-      <Text style={styles.label}>Rok</Text>
+      <Text style={[styles.label, { color: colors.text }]}>Nazwa przedmiotu *</Text>
       <TextInput 
-        style={styles.input} 
-        value={year} 
-        onChangeText={setYear}
-        keyboardType="numeric" // Klawiatura numeryczna
+        style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]} 
+        value={name} 
+        onChangeText={setName} 
+        placeholder="np. Karta Charizard"
+        placeholderTextColor={colors.textSecondary}
       />
 
-      {/* === PRZEŁĄCZNIK "NA SPRZEDAŻ" === */}
+      <Text style={[styles.label, { color: colors.text }]}>Opis</Text>
+      <TextInput 
+        style={[styles.input, styles.multiline, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]} 
+        value={description} 
+        onChangeText={setDescription} 
+        multiline 
+        placeholder="np. Edycja limitowana z 1999 roku..."
+        placeholderTextColor={colors.textSecondary}
+      />
+      
+      <Text style={[styles.label, { color: colors.text }]}>Autor</Text>
+      <TextInput 
+        style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]} 
+        value={author} 
+        onChangeText={setAuthor} 
+        placeholder="np. The Pokémon Company"
+        placeholderTextColor={colors.textSecondary}
+      />
+
+      <Text style={[styles.label, { color: colors.text }]}>Rok</Text>
+      <TextInput 
+        style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]} 
+        value={year} 
+        onChangeText={setYear}
+        keyboardType="numeric"
+        placeholder="np. 1999"
+        placeholderTextColor={colors.textSecondary}
+      />
+
       <View style={styles.switchContainer}>
-        <Text style={styles.label}>Wystaw na sprzedaż</Text>
+        <Text style={[styles.label, { color: colors.text }]}>Wystaw na sprzedaż</Text>
         <Switch
-          trackColor={{ false: "#767577", true: "#81b0ff" }}
-          thumbColor={isForSale ? "#f5dd4b" : "#f4f3f4"}
+          trackColor={{ false: colors.border, true: colors.primary }}
+          thumbColor={isForSale ? colors.background : colors.surface}
           onValueChange={setIsForSale}
           value={isForSale}
         />
       </View>
 
-      {/* === WARUNKOWE POLE CENY === */}
       {isForSale && (
         <>
-          <Text style={styles.label}>Cena (PLN)</Text>
+          <Text style={[styles.label, { color: colors.text }]}>Cena (PLN)</Text>
           <TextInput 
-            style={styles.input} 
+            style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]} 
             value={price} 
             onChangeText={setPrice} 
-            keyboardType="decimal-pad" // Klawiatura numeryczna z kropką/przecinkiem
+            keyboardType="decimal-pad"
+            placeholder="np. 150.00"
+            placeholderTextColor={colors.textSecondary}
           />
         </>
       )}
 
-      <Button title="Wybierz zdjęcia z galerii *" onPress={pickImage} />
+      <Pressable style={[styles.imageButton, { backgroundColor: colors.surface }]} onPress={pickImage}>
+        <Ionicons name="images-outline" size={24} color={colors.primary} />
+        <Text style={[styles.imageButtonText, { color: colors.primary }]}>
+          {images.length > 0 ? `Wybrano ${images.length} zdjęć` : 'Wybierz zdjęcia z galerii *'}
+        </Text>
+      </Pressable>
 
       <View style={styles.imageContainer}>
           {images.map(img => (
@@ -139,31 +179,59 @@ export default function AddItemScreen() {
           ))}
       </View>
 
-      <View style={{marginTop: 20}}>
-        <Button title={loading ? "Dodawanie..." : "Dodaj przedmiot"} onPress={handleAddItem} disabled={loading} />
+      <View style={{marginTop: Spacing.large}}>
+        <Button title={loading ? "Dodawanie..." : "Dodaj przedmiot"} onPress={handleAddItem} disabled={loading} color={colors.primary} />
       </View>
     </ScrollView>
   );
 }
 
-// === NOWE STYLE ===
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  label: { fontSize: 16, fontWeight: '600', marginBottom: 8 },
+  container: { flex: 1, padding: Spacing.medium },
+  label: { fontSize: FontSize.body, fontWeight: '600', marginBottom: Spacing.small },
   input: {
-    borderColor: 'gray', borderWidth: 1, borderRadius: 8,
-    padding: 10, marginBottom: 16, fontSize: 16,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: Spacing.medium,
+    paddingVertical: 12,
+    marginBottom: Spacing.medium,
+    fontSize: FontSize.body,
+  },
+  multiline: {
+    minHeight: 100,
+    textAlignVertical: 'top'
   },
   switchContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: Spacing.medium,
+    paddingVertical: Spacing.small,
+  },
+  imageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: Spacing.medium,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: lightTheme.primary, // Używamy lightTheme, bo to kolor brandowy
+    borderStyle: 'dashed',
+    marginBottom: Spacing.medium,
+  },
+  imageButtonText: {
+    marginLeft: Spacing.small,
+    fontSize: FontSize.body,
+    fontWeight: '600',
   },
   imageContainer: {
-      flexDirection: 'row', flexWrap: 'wrap', marginTop: 16,
+      flexDirection: 'row',
+      flexWrap: 'wrap',
   },
   image: {
-      width: 100, height: 100, borderRadius: 8, margin: 5,
+      width: 100,
+      height: 100,
+      borderRadius: 8,
+      margin: 5,
   }
 });

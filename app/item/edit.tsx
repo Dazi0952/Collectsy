@@ -2,9 +2,13 @@
 import { View, Text, TextInput, Button, StyleSheet, Alert, ScrollView, ActivityIndicator } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../src/api/supabase';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, Stack } from 'expo-router';
+import { useTheme } from '../../src/context/ThemeContext';
+import { lightTheme, darkTheme, Spacing, FontSize } from '../../src/constants/theme';
 
 export default function EditItemScreen() {
+  const { theme } = useTheme();
+  const colors = theme === 'light' ? lightTheme : darkTheme;
   const router = useRouter();
   const { id } = useLocalSearchParams(); // Pobieramy ID z parametrów URL
 
@@ -63,18 +67,34 @@ export default function EditItemScreen() {
   };
 
   if (loading) {
-    return <ActivityIndicator size="large" style={styles.centered} />;
+    return <ActivityIndicator size="large" color={colors.primary} style={{ flex: 1, backgroundColor: colors.background }} />;
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.label}>Nazwa przedmiotu</Text>
-      <TextInput style={styles.input} value={name} onChangeText={setName} />
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
+      <Stack.Screen options={{ 
+        title: 'Edytuj przedmiot',
+        headerStyle: { backgroundColor: colors.background },
+        headerTitleStyle: { color: colors.text }
+      }}/>
+      <Text style={[styles.label, { color: colors.text }]}>Nazwa przedmiotu</Text>
+      <TextInput 
+        style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]} 
+        value={name} 
+        onChangeText={setName} 
+        placeholderTextColor={colors.textSecondary}
+      />
       
-      <Text style={styles.label}>Opis</Text>
-      <TextInput style={styles.input} value={description} onChangeText={setDescription} multiline />
+      <Text style={[styles.label, { color: colors.text }]}>Opis</Text>
+      <TextInput 
+        style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface, minHeight: 120 }]} 
+        value={description} 
+        onChangeText={setDescription} 
+        multiline 
+        placeholderTextColor={colors.textSecondary}
+      />
       
-      <Button title="Zapisz zmiany" onPress={handleUpdateItem} disabled={loading} />
+      <Button title="Zapisz zmiany" onPress={handleUpdateItem} disabled={loading} color={colors.primary} />
     </ScrollView>
   );
 }

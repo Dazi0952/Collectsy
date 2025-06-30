@@ -4,8 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../src/api/supabase';
 import { Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors , FontSize , Spacing } from '../../src/constants/theme'
-
+import { Colors , FontSize , Spacing, lightTheme, darkTheme } from '../../src/constants/theme'
+import { useTheme } from '../../src/context/ThemeContext'
 
 
 // Użyjemy tego samego typu 'Item' co na ekranie profilu
@@ -16,6 +16,8 @@ type Item = {
 };
 
 export default function FeedScreen() {
+  const { theme } = useTheme();
+  const colors = theme === 'light' ? lightTheme : darkTheme;
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -42,7 +44,7 @@ export default function FeedScreen() {
   };
 
   if (loading) {
-    return <ActivityIndicator size="large" style={styles.centered} />;
+    return <ActivityIndicator size="large" color={colors.primary} style={{ flex: 1, backgroundColor: colors.background }} />;
   }
 
   const filteredItems = items.filter(item => 
@@ -50,100 +52,75 @@ export default function FeedScreen() {
     );
 
   return (
-    <View style={styles.container}>
-    {/* === NOWA SEKCJA WYSZUKIWARKI === */}
-    <View style={styles.searchContainer}>
-      <Ionicons name="search" size={20} color="gray" style={styles.searchIcon} />
-      <TextInput
-        style={styles.searchInput}
-        placeholder="Szukaj przedmiotów..."
-        value={searchQuery}
-        onChangeText={setSearchQuery} // Aktualizuj stan przy każdej zmianie tekstu
-      />
-    </View>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.searchContainer, { backgroundColor: colors.surface }]}>
+        <Ionicons name="search" size={20} color={colors.textSecondary} style={styles.searchIcon} />
+        <TextInput
+          style={[styles.searchInput, { color: colors.text }]}
+          placeholder="Szukaj przedmiotów..."
+          placeholderTextColor={colors.textSecondary}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+      </View>
+
       <FlatList
         data={filteredItems}
         keyExtractor={(item) => item.id}
-        numColumns={2} // Dla odmiany użyjmy 2 kolumn
+        numColumns={2}
         renderItem={({ item }) => (
           <Link href={`/item/${item.id}`} asChild>
-            <Pressable style={styles.itemContainer}>
+            <Pressable style={[styles.itemContainer, { backgroundColor: colors.surface }]}>
               <Image source={{ uri: item.image_urls[0] }} style={styles.itemImage} />
-              <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
+              <Text style={[styles.itemName, { color: colors.text }]} numberOfLines={1}>{item.name}</Text>
               {item.image_urls.length > 1 && (
-                <Ionicons
-                  name="copy-outline"
-                  size={18}
-                  color="white"
-                  style={styles.collectionIcon}
-                />
+                <Ionicons name="copy-outline" size={18} color="white" style={styles.collectionIcon} />
               )}
             </Pressable>
           </Link>
         )}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>Brak przedmiotów do odkrycia.</Text>
-        }
+        ListEmptyComponent={<Text style={[styles.emptyText, { color: colors.textSecondary }]}>Brak przedmiotów do odkrycia.</Text>}
       />
     </View>
   );
 }
 
-// Nowe, dopasowane style dla ekranu Feed
 const styles = StyleSheet.create({
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  container: { flex: 1, backgroundColor: Colors.background },
-  itemContainer: {
-    flex: 1,
-    margin: Spacing.small,
-    borderRadius: 12,
-    backgroundColor: Colors.background,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  itemImage: {
-    width: '100%',
-    aspectRatio: 1,
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
-  },
-  itemName: {
-    fontWeight: '600',
-    padding: Spacing.small,
-    color: Colors.text,
-    fontSize: FontSize.subheadline
-  },
-  collectionIcon: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  },
-  emptyText: {
-    textAlign: 'center',
-    marginTop: 50,
-    fontSize: 16,
-    color: 'gray',
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f0f0f0',
-    borderRadius: 10,
-    margin: 16,
-    paddingHorizontal: 10,
-  },
-  searchIcon: {
-    marginRight: 10,
-  },
-  searchInput: {
-    flex: 1,
-    height: 40,
-    fontSize: 16,
-  },
+  container: { flex: 1 },
+  searchContainer: { flexDirection: 'row', 
+    alignItems: 'center', 
+    borderRadius: 10, 
+    margin: Spacing.medium, 
+    paddingHorizontal: Spacing.small },
+  searchIcon: { marginRight: Spacing.small },
+  searchInput: { flex: 1, 
+    height: 40, 
+    fontSize: FontSize.body },
+  itemContainer: { flex: 1, 
+    margin: Spacing.small, 
+    borderRadius: 12, 
+    elevation: 2, shadowColor: "#000", 
+    shadowOffset: { width: 0, 
+    height: 1 }, 
+    shadowOpacity: 0.05, 
+    shadowRadius: 4 },
+    itemImage: { width: '100%', 
+    aspectRatio: 1, 
+    borderTopLeftRadius: 12, 
+    borderTopRightRadius: 12 },
+  itemName: { fontWeight: '600', 
+    padding: Spacing.small, 
+    fontSize: FontSize.subheadline },
+  collectionIcon: { position: 'absolute', 
+    top: 8, 
+    right: 8, 
+   textShadowColor: 'rgba(0, 0, 0, 0.75)', 
+   textShadowOffset: { width: 0, height: 1 }, 
+   textShadowRadius: 3 },
+  emptyText: { textAlign: 'center', 
+    marginTop: 50, 
+    fontSize: FontSize.body },
+  centered: { flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center' },
 });

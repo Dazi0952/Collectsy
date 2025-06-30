@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
 import { supabase } from '../../src/api/supabase';
 import { useAuth } from '../../src/hooks/useAuth';
+import { useTheme } from '../../src/context/ThemeContext';
+import { lightTheme, darkTheme, Spacing, FontSize } from '../../src/constants/theme';
 
 // Definicja pełnego typu przedmiotu (bez zmian)
 type ItemDetails = {
@@ -24,6 +26,8 @@ export default function ItemDetailScreen() {
   const router = useRouter();
   const [item, setItem] = useState<ItemDetails | null>(null);
   const [loading, setLoading] = useState(true);
+  const { theme } = useTheme();
+  const colors = theme === 'light' ? lightTheme : darkTheme;
 
   useEffect(() => {
     if (id) {
@@ -86,19 +90,17 @@ export default function ItemDetailScreen() {
   router.push(`/item/edit?id=${item.id}`);
   };
 
-  if (loading) return <ActivityIndicator size="large" style={styles.centered} />;
+  if (loading) {
+    return <ActivityIndicator size="large" color={colors.primary} style={{ flex: 1, backgroundColor: colors.background }} />;
+  }
   if (!item) return <View style={styles.centered}><Text>Nie znaleziono przedmiotu.</Text></View>;
 
   // Sprawdzamy, czy zalogowany użytkownik jest właścicielem przedmiotu
   const isOwner = user?.id === item.user_id;
 
   return (
-  <ScrollView 
-    style={styles.container} 
-    contentContainerStyle={styles.contentContainer}
-  >
-    {/* Konfiguracja nagłówka - to jest OK */}
-    <Stack.Screen options={{ title: item.name }} />
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.contentContainer}>
+      <Stack.Screen options={{ title: item.name }} />
     
     {/* Karuzela zdjęć - teraz jest samodzielna */}
     <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={styles.imageCarousel}>
@@ -107,42 +109,37 @@ export default function ItemDetailScreen() {
       ))}
     </ScrollView>
 
-    {/* Kontener ze wszystkimi szczegółami tekstowymi */}
     <View style={styles.detailsContainer}>
-      <Text style={styles.title}>{item.name}</Text>
-      
-      {item.is_for_sale && item.price && (
-        <Text style={styles.price}>{item.price.toFixed(2)} PLN</Text>
+        <Text style={[styles.title, { color: colors.text }]}>{item.name}</Text>
+        {item.is_for_sale && item.price && (
+          <Text style={[styles.price, { color: colors.primary }]}>{item.price.toFixed(2)} PLN</Text>
+        )}
+        <Text style={[styles.description, { color: colors.text }]}>{item.description}</Text>
+        
+        <View style={[styles.metaContainer, { borderTopColor: colors.border }]}>
+          {item.author && (
+            <View style={styles.metaItem}>
+              <Text style={[styles.metaLabel, { color: colors.textSecondary }]}>Autor:</Text>
+              <Text style={[styles.metaValue, { color: colors.text }]}>{item.author}</Text>
+            </View>
+          )}
+          {item.year && (
+            <View style={styles.metaItem}>
+              <Text style={[styles.metaLabel, { color: colors.textSecondary }]}>Rok:</Text>
+              <Text style={[styles.metaValue, { color: colors.text }]}>{item.year}</Text>
+            </View>
+          )}
+        </View>
+      </View>
+
+      {isOwner && (
+        <View style={[styles.managementContainer, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
+          <Button title="Edytuj" onPress={handleEdit} color={colors.primary} />
+          <Button title="Usuń" onPress={handleDelete} color={colors.danger} />
+        </View>
       )}
-
-      <Text style={styles.description}>{item.description}</Text>
-      
-      <View style={styles.metaContainer}>
-        {item.author && (
-          <View style={styles.metaItem}>
-            <Text style={styles.metaLabel}>Autor:</Text>
-            <Text style={styles.metaValue}>{item.author}</Text>
-          </View>
-        )}
-        {item.year && (
-          <View style={styles.metaItem}>
-            <Text style={styles.metaLabel}>Rok:</Text>
-            <Text style={styles.metaValue}>{item.year}</Text>
-          </View>
-        )}
-      </View>
-    </View>
-
-    {/* === SEKCJA ZARZĄDZANIA W POPRAWNYM MIEJSCU === */}
-    {/* Jest na głównym poziomie, na samym dole */}
-    {isOwner && (
-      <View style={styles.managementContainer}>
-        <Button title="Edytuj" onPress={handleEdit} />
-        <Button title="Usuń" onPress={handleDelete} color="red" />
-      </View>
-    )}
-  </ScrollView>
-);
+    </ScrollView>
+  );
 }
 
 const { width } = Dimensions.get('window');
