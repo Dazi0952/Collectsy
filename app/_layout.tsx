@@ -63,13 +63,19 @@ function RootLayoutNav() {
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
-          name="settings" // Poprawiona ścieżka z poprzedniego kroku
+          name="settings"
           options={{
             presentation: 'modal',
             title: 'Ustawienia',
           }}
         />
-        {/* Usunąłem stąd definicje 'login' i 'register', bo są one częścią głównego Stacka i nie potrzebują osobnej konfiguracji tutaj */}
+        <Stack.Screen 
+          name="edit-profile" 
+          options={{ 
+          title: "Edytuj Profil", 
+          presentation: 'modal' 
+           }}
+        />
       </Stack>
     </>
   );

@@ -16,6 +16,7 @@ type Item = {
 
 type Profile = {
   username: string;
+  avatar_url: string | null;
 };
 
 export default function ProfileScreen() {
@@ -26,6 +27,7 @@ export default function ProfileScreen() {
   const [items, setItems] = useState<Item[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+
 
   // Używamy useFocusEffect, aby odświeżać dane za każdym razem, gdy ekran jest widoczny
   useFocusEffect(
@@ -38,16 +40,15 @@ export default function ProfileScreen() {
         return;
       }
       setLoading(true);
+      //console.log('--- Rozpoczynam pobieranie danych dla usera:', user.id);
 
-      // --- NOWA, BEZPIECZNIEJSZA LOGIKA ---
-
-      // 1. Pobierz profil. Używamy .maybeSingle() zamiast .single()
-      // .maybeSingle() zwraca 'null' zamiast błędu, jeśli nie znajdzie wiersza.
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('username')
+        .select('*')
         .eq('id', user.id)
-        .maybeSingle(); // <--- KLUCZOWA ZMIANA
+        .maybeSingle();
+        //console.log('Odpowiedź z bazy (profil):', { profileData, profileError });
+        
 
       if (profileError) {
         console.error("Błąd pobierania profilu:", profileError);
@@ -84,10 +85,17 @@ export default function ProfileScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.profileHeader}>
         <Image 
-          // Generujemy awatar na podstawie nazwy użytkownika (jeśli jest) lub emaila
-          source={{ uri: `https://api.dicebear.com/7.x/initials/png?seed=${profile?.username || user?.email}` }} 
-          style={styles.avatar} 
+          // Jeśli jest avatar_url, użyj go. Jeśli nie, wygeneruj z inicjałów.
+            source={{ uri: profile?.avatar_url || `https://api.dicebear.com/7.x/initials/png?seed=${profile?.username || user?.email}` }} 
+            style={styles.avatar}  
         />
+        <View style={styles.actionsContainer}>
+          <Link href="/edit-profile" asChild>
+           <Pressable style={[styles.button, { backgroundColor: colors.surface }]}>
+             <Text style={[styles.buttonText, { color: colors.text }]}>Edytuj Profil</Text>
+            </Pressable>
+          </Link>
+        </View>
         <View style={styles.statsContainer}>
           <View style={styles.stat}>
             <Text style={[styles.statNumber, { color: colors.text }]}>{items.length}</Text>
@@ -157,4 +165,7 @@ const styles = StyleSheet.create({
   },
   emptyText: { fontSize: FontSize.headline, fontWeight: 'bold' },
   emptySubText: { fontSize: FontSize.body, marginTop: Spacing.small },
+  actionsContainer: { paddingHorizontal: Spacing.medium, paddingBottom: Spacing.small },
+  button: { paddingVertical: 10, borderRadius: 8, alignItems: 'center' },
+  buttonText: { fontWeight: '600' },
 });
