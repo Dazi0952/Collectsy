@@ -3,8 +3,12 @@ import { Text, View, StyleSheet, TextInput, Pressable, Alert } from 'react-nativ
 import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { supabase } from '../src/api/supabase';
+import { Colors , FontSize , Spacing, lightTheme, darkTheme } from '../src/constants/theme'
+import { useTheme } from '../src/context/ThemeContext'
 
 export default function LoginScreen() {
+  const { theme } = useTheme();
+  const colors = theme === 'light' ? lightTheme : darkTheme;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -34,19 +38,21 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Zaloguj się</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+          <Text style={[styles.title, { color: colors.text }]}>Zaloguj</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
         placeholder="Adres e-mail"
+        placeholderTextColor={colors.textSecondary}
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
         keyboardType="email-address"
       />
       <TextInput
-        style={styles.input}
+        style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
         placeholder="Hasło"
+        placeholderTextColor={colors.textSecondary}
         value={password}
         onChangeText={setPassword}
         secureTextEntry

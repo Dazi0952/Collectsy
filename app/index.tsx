@@ -2,12 +2,16 @@
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import React from 'react';
 import { Link } from 'expo-router';
+import { Colors , FontSize , Spacing, lightTheme, darkTheme } from '../src/constants/theme'
+import { useTheme } from '../src/context/ThemeContext'
 
 export default function WelcomeScreen() {
+  const { theme } = useTheme();
+  const colors = theme === 'light' ? lightTheme : darkTheme;
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Collectsy</Text>
-      <Text style={styles.subtitle}>Wszystkie Twoje kolekcje w jednym miejscu.</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <Text style={[styles.title, { color: colors.text }]}>Collectsy</Text>
+          <Text style={styles.subtitle}>Wszystkie Twoje kolekcje w jednym miejscu.</Text>
 
       <Link href="/login" asChild>
         <Pressable style={styles.button}>

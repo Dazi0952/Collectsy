@@ -2,6 +2,8 @@
 import { Text, View, StyleSheet, TextInput, Pressable, Alert } from 'react-native';
 import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
+import { Colors , FontSize , Spacing, lightTheme, darkTheme } from '../src/constants/theme'
+import { useTheme } from '../src/context/ThemeContext'
 import { supabase } from '../src/api/supabase'; // Importujemy nasz klient Supabase
 
 export default function RegisterScreen() {
@@ -9,48 +11,78 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const [username, setUsername] = useState('');
+  const { theme } = useTheme();
+    const colors = theme === 'light' ? lightTheme : darkTheme;
 
   const handleRegister = async () => {
-    if (!email || !password) {
-      Alert.alert('Błąd', 'Wprowadź email i hasło.');
+    if (!email || !password || !username) {
+      Alert.alert('Błąd', 'Wypełnij wszystkie pola.');
       return;
     }
     setLoading(true);
 
-    // Tak wygląda rejestracja w Supabase!
-    const { data, error } = await supabase.auth.signUp({
+    // 1. Zarejestruj użytkownika w systemie Auth
+    const { data: authData, error: authError } = await supabase.auth.signUp({
       email: email,
       password: password,
     });
 
-    if (error) {
-      Alert.alert('Błąd rejestracji', error.message);
-    } else {
-      // W Supabase po rejestracji trzeba potwierdzić email.
-      // Na razie wyświetlamy komunikat i cofamy.
-      Alert.alert('Sukces!', 'Sprawdź swoją skrzynkę mailową, aby potwierdzić rejestrację.');
-      if (router.canGoBack()) {
-        router.back();
-      }
+    if (authError) {
+      Alert.alert('Błąd rejestracji', authError.message);
+      setLoading(false);
+      return;
     }
+
+    if (!authData.user) {
+        Alert.alert('Błąd', 'Nie udało się utworzyć użytkownika.');
+        setLoading(false);
+        return;
+    }
+
+    // 2. Stwórz wpis w tabeli 'profiles'
+    const { error: profileError } = await supabase.from('profiles').insert({
+      id: authData.user.id, // Użyj ID z Auth jako klucza głównego i obcego
+      username: username.toLowerCase().trim(), // Zapisz nazwę małymi literami i bez spacji
+    });
+
+    if (profileError) {
+      // Jeśli tu wystąpi błąd (np. nazwa zajęta), to jest problem
+      // W pełnej aplikacji trzeba by usunąć użytkownika z Auth
+      Alert.alert('Błąd', 'Nie udało się zapisać profilu: ' + profileError.message);
+    } else {
+      Alert.alert('Sukces!', 'Sprawdź swoją skrzynkę mailową, aby potwierdzić rejestrację.');
+      router.back();
+    }
+    
     setLoading(false);
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Stwórz konto</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <Text style={[styles.title, { color: colors.text }]}>Stwórz konto</Text>
       {/* Reszta JSX jest identyczna jak w wersji Firebase */}
       <TextInput
-        style={styles.input}
+        style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
+        placeholder="Nazwa użytkownika"
+        placeholderTextColor={colors.textSecondary}
+        value={username}
+        onChangeText={setUsername}
+        autoCapitalize="none"
+      />
+      <TextInput
+        style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
         placeholder="Adres e-mail"
+        placeholderTextColor={colors.textSecondary}
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
         keyboardType="email-address"
       />
       <TextInput
-        style={styles.input}
+        style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
         placeholder="Hasło (min. 6 znaków)"
+        placeholderTextColor={colors.textSecondary}
         value={password}
         onChangeText={setPassword}
         secureTextEntry
