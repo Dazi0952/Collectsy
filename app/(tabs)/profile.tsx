@@ -7,6 +7,7 @@ import { Link, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { lightTheme, darkTheme, Spacing, FontSize } from '../../src/constants/theme';
 import { useTheme } from '../../src/context/ThemeContext';
+import { Colors } from 'react-native/Libraries/NewAppScreen';
 
 type Item = {
   id: string;
@@ -19,6 +20,12 @@ type Profile = {
   avatar_url: string | null;
 };
 
+type CollectionWithCover = {
+  id: string;
+  name: string;
+  cover_image_url: string | null;
+};
+
 export default function ProfileScreen() {
   const { user } = useAuth();
   const { theme } = useTheme();
@@ -27,6 +34,7 @@ export default function ProfileScreen() {
   const [items, setItems] = useState<Item[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [collections, setCollections] = useState<CollectionWithCover[]>([]);
 
 
   // Używamy useFocusEffect, aby odświeżać dane za każdym razem, gdy ekran jest widoczny
@@ -34,43 +42,43 @@ export default function ProfileScreen() {
   useCallback(() => {
     const fetchUserData = async () => {
       if (!user) {
-        setItems([]);
         setProfile(null);
+        setCollections([]); // Ustawiamy pustą tablicę kolekcji
         setLoading(false);
         return;
       }
       setLoading(true);
-      //console.log('--- Rozpoczynam pobieranie danych dla usera:', user.id);
 
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle();
-        //console.log('Odpowiedź z bazy (profil):', { profileData, profileError });
+      try {
+        // === ZMIENIONA LOGIKA POBIERANIA DANYCH ===
+
+        // 1. Pobierz profil (to zapytanie pozostaje bez zmian)
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .maybeSingle();
         
-
-      if (profileError) {
-        console.error("Błąd pobierania profilu:", profileError);
-      } else {
+        if (profileError) throw profileError;
         setProfile(profileData);
+
+        // 2. Pobierz kolekcje z okładkami za pomocą funkcji RPC
+        const { data: collectionsData, error: collectionsError } = await supabase.rpc(
+          'get_collections_with_covers', 
+          { user_id_param: user.id }
+        );
+        console.log('RPC Response:', { collectionsData, collectionsError });
+
+        if (collectionsError) throw collectionsError;
+        setCollections(collectionsData || []);
+      
+      } catch (error) {
+        console.error("Błąd podczas pobierania danych użytkownika:", error);
+        // Możesz dodać Alert, jeśli chcesz poinformować użytkownika
+      } finally {
+        // 3. Zawsze zakończ ładowanie
+        setLoading(false);
       }
-
-      // 2. Pobierz przedmioty. To zapytanie pozostaje bez zmian.
-      const { data: itemsData, error: itemsError } = await supabase
-        .from('items')
-        .select('id, name, image_urls')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (itemsError) {
-        console.error("Błąd pobierania przedmiotów:", itemsError);
-      } else {
-        setItems(itemsData || []);
-      }
-
-      // 3. Zawsze zakończ ładowanie
-      setLoading(false);
     };
 
     fetchUserData();
@@ -81,55 +89,67 @@ export default function ProfileScreen() {
     return <ActivityIndicator size="large" color={colors.primary} style={styles.centered} />;
   }
 
+  console.log("Renderuję FlatList z danymi:", collections);
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.profileHeader}>
         <Image 
-          // Jeśli jest avatar_url, użyj go. Jeśli nie, wygeneruj z inicjałów.
-            source={{ uri: profile?.avatar_url || `https://api.dicebear.com/7.x/initials/png?seed=${profile?.username || user?.email}` }} 
-            style={styles.avatar}  
+          source={{ uri: profile?.avatar_url || `https://api.dicebear.com/7.x/initials/png?seed=${profile?.username || user?.email}` }} 
+          style={styles.avatar} 
         />
-        <View style={styles.actionsContainer}>
-          <Link href="/edit-profile" asChild>
-           <Pressable style={[styles.button, { backgroundColor: colors.surface }]}>
-             <Text style={[styles.buttonText, { color: colors.text }]}>Edytuj Profil</Text>
-            </Pressable>
-          </Link>
-        </View>
         <View style={styles.statsContainer}>
           <View style={styles.stat}>
-            <Text style={[styles.statNumber, { color: colors.text }]}>{items.length}</Text>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Przedmiotów</Text>
+            <Text style={[styles.statNumber, { color: colors.text }]}>{collections.length}</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Kolekcji</Text>
           </View>
         </View>
       </View>
+      <Text style={[styles.username, { color: colors.text }]}>{profile?.username || user?.email}</Text>
       
-      {/* Wyświetlamy nazwę użytkownika, a jeśli jej nie ma - email */}
-      <Text style={[styles.username, { color: colors.text }]}>
-        {profile?.username || user?.email}
-      </Text>
-
+      <View style={styles.actionsContainer}>
+        <Link href="/edit-profile" asChild>
+          <Pressable style={[styles.button, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.buttonText, { color: colors.text }]}>Edytuj Profil</Text>
+          </Pressable>
+        </Link>
+      </View>
+      <View style={{ flex: 1}}>
       <FlatList
-        data={items}
+        data={collections}
+        extraData={collections}
         keyExtractor={(item) => item.id}
-        numColumns={3}
-        renderItem={({ item }) => (
-          <Link href={`/item/${item.id}`} asChild>
-            <Pressable style={styles.itemContainer}>
-              <Image source={{ uri: item.image_urls[0] }} style={styles.itemImage} />
-              {item.image_urls.length > 1 && (
-                <Ionicons name="copy-outline" size={18} color="white" style={styles.collectionIcon} />
-              )}
-            </Pressable>
-          </Link>
-        )}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Twoja kolekcja jest pusta.</Text>
-            <Text style={[styles.emptySubText, { color: colors.textSecondary }]}>Dodaj swój pierwszy przedmiot!</Text>
-          </View>
-        }
+        numColumns={2}
+        renderItem={({ item: collection }) => (
+  <Link href={`/collection/${collection.id}?name=${collection.name}`} asChild>
+    <Pressable style={{ 
+        flex: 1, 
+        margin: 8, 
+        aspectRatio: 1,
+    }}>
+      <Image 
+        source={{ uri: collection.cover_image_url || 'https://via.placeholder.com/300' }}
+        style={{ width: '100%', height: '100%', borderRadius: 12 }}
       />
+      <View style={{
+          position: 'absolute', // Kluczowy element
+          bottom: 0,
+          left: 0,
+          right: 0,
+          backgroundColor: 'rgba(0,0,0,0.4)',
+          padding: 8,
+          borderBottomLeftRadius: 12, // Dopasuj do zaokrąglenia obrazka
+          borderBottomRightRadius: 12,
+      }}>
+        <Text style={{ color: 'white', fontWeight: 'bold' }}>
+          {collection.name}
+        </Text>
+      </View>
+    </Pressable>
+  </Link>
+)}
+      />
+      </View>
     </View>
   );
 }
@@ -168,4 +188,30 @@ const styles = StyleSheet.create({
   actionsContainer: { paddingHorizontal: Spacing.medium, paddingBottom: Spacing.small },
   button: { paddingVertical: 10, borderRadius: 8, alignItems: 'center' },
   buttonText: { fontWeight: '600' },
+  collectionContainer: {
+  flex: 1,
+  margin: Spacing.small,
+  aspectRatio: 1, // Zapewnia kwadratowy kształt
+  borderRadius: 12,
+  overflow: 'hidden', // Ważne, aby zaokrąglić też obrazek
+  backgroundColor: Colors.surface, // Użyj dynamicznego koloru
+},
+collectionImage: {
+  width: '100%',
+  height: '100%',
+},
+collectionOverlay: {
+  position: 'absolute',
+  bottom: 0,
+  left: 0,
+  right: 0,
+  backgroundColor: 'rgba(0, 0, 0, 0.4)', // Półprzezroczyste czarne tło
+  padding: Spacing.small,
+},
+collectionName: {
+  color: 'white',
+  fontSize: FontSize.subheadline,
+  fontWeight: 'bold',
+  textAlign: 'center',
+},
 });

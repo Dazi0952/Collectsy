@@ -1,11 +1,13 @@
 // app/item/[id].tsx - WERSJA Z PEŁNYMI SZCZEGÓŁAMI
-import { View, Text, StyleSheet, ActivityIndicator, Image, ScrollView, Dimensions, Button, Alert } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Image, ScrollView, Dimensions, Button, Alert, Pressable } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
 import { supabase } from '../../src/api/supabase';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useTheme } from '../../src/context/ThemeContext';
 import { lightTheme, darkTheme, Spacing, FontSize } from '../../src/constants/theme';
+import { Ionicons } from '@expo/vector-icons';
+import { Colors } from 'react-native/Libraries/NewAppScreen';
 
 // Definicja pełnego typu przedmiotu (bez zmian)
 type ItemDetails = {
@@ -28,6 +30,8 @@ export default function ItemDetailScreen() {
   const [loading, setLoading] = useState(true);
   const { theme } = useTheme();
   const colors = theme === 'light' ? lightTheme : darkTheme;
+  const [likeCount, setLikeCount] = useState(0);
+  const [isLiked, setIsLiked] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -36,20 +40,51 @@ export default function ItemDetailScreen() {
   }, [id]);
 
   const fetchItemDetails = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('items')
-      .select('*, user_id') // Pobieramy wszystkie kolumny, co już robiliśmy
-      .eq('id', id)
-      .single();
+  setLoading(true);
+  try {
+    // Pobieramy dane przedmiotu i informacje o polubieniach równocześnie
+    const [itemRes, likeRes] = await Promise.all([
+      supabase.from('items').select('*, user_id').eq('id', id).single(),
+      supabase.from('likes').select('*', { count: 'exact' }).eq('item_id', id)
+    ]);
+    
+    if (itemRes.error) throw itemRes.error;
+    setItem(itemRes.data);
 
-    if (error) {
-      console.error(error);
-    } else {
-      setItem(data);
+    if (likeRes.error) throw likeRes.error;
+    setLikeCount(likeRes.count || 0);
+
+    // Sprawdź, czy zalogowany użytkownik już polubił ten przedmiot
+    if (user) {
+      const userLike = likeRes.data?.find(like => like.user_id === user.id);
+      setIsLiked(!!userLike); // Ustawia na true jeśli znaleziono, false jeśli nie
     }
+  } catch (error) {
+    console.error("Błąd pobierania szczegółów przedmiotu:", error);
+  } finally {
     setLoading(false);
-  };
+  }
+};
+
+const toggleLike = async () => {
+  if (!user) {
+    Alert.alert("Błąd", "Musisz być zalogowany, aby polubić przedmiot.");
+    return;
+  }
+  
+  // Optymistyczna aktualizacja UI
+  setIsLiked(!isLiked);
+  setLikeCount(prev => isLiked ? prev - 1 : prev + 1);
+
+  if (isLiked) {
+    // Jeśli już jest polubione -> usuń polubienie
+    await supabase.from('likes').delete().match({ item_id: id, user_id: user.id });
+  } else {
+    // Jeśli nie jest polubione -> dodaj polubienie
+    await supabase.from('likes').insert({ item_id: id, user_id: user.id });
+  }
+  // Można dodać obsługę błędu i przywrócenie stanu UI w razie niepowodzenia
+};
 
   if (loading) {
     return <ActivityIndicator size="large" style={styles.centered} />;
@@ -106,8 +141,20 @@ export default function ItemDetailScreen() {
     <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={styles.imageCarousel}>
       {item.image_urls.map((url, index) => (
         <Image key={index} source={{ uri: url }} style={styles.image} />
+        
       ))}
     </ScrollView>
+    <View style={styles.actionsContainer}>
+  <Pressable onPress={toggleLike} style={styles.likeButton}>
+    <Ionicons 
+      name={isLiked ? "heart" : "heart-outline"} 
+      size={28} 
+      color={isLiked ? colors.danger : colors.text} 
+    />
+    <Text style={[styles.likeCount, { color: colors.text }]}>{likeCount}</Text>
+  </Pressable>
+  {/* Tu mogą być inne przyciski, np. "Skomentuj" */}
+</View>
 
     <View style={styles.detailsContainer}>
         <Text style={[styles.title, { color: colors.text }]}>{item.name}</Text>
@@ -202,4 +249,21 @@ const styles = StyleSheet.create({
   contentContainer: {
     paddingBottom: 50, // Dodaje margines na dole, aby nic nie było ucięte
   },
+  actionsContainer: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  paddingVertical: Spacing.small,
+  borderBottomWidth: 1,
+  borderBottomColor: Colors.border,
+  marginBottom: Spacing.medium,
+},
+likeButton: {
+  flexDirection: 'row',
+  alignItems: 'center',
+},
+likeCount: {
+  marginLeft: Spacing.small,
+  fontSize: FontSize.body,
+  fontWeight: '600',
+},
 });

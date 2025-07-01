@@ -1,9 +1,9 @@
 // app/(tabs)/add.tsx - PEŁNA, ROZBUDOWANA WERSJA
 import { View, Text, TextInput, Button, StyleSheet, Alert, Image, ScrollView, Switch, Pressable } from 'react-native';
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { supabase } from '../../src/api/supabase';
 import { useAuth } from '../../src/hooks/useAuth';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../../src/context/ThemeContext';
 import { lightTheme, darkTheme, Spacing, FontSize } from '../../src/constants/theme';
@@ -14,20 +14,21 @@ export default function AddItemScreen() {
   const colors = theme === 'light' ? lightTheme : darkTheme;
   const { user } = useAuth();
   const router = useRouter();
-
-  // === NOWE STANY DLA DODATKOWYCH PÓL ===
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [year, setYear] = useState('');
   const [author, setAuthor] = useState('');
   const [isForSale, setIsForSale] = useState(false);
   const [price, setPrice] = useState('');
+  const [collections, setCollections] = useState<{id: string; name: string}[]>([]);
+  const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null);
+  const [newCollectionName, setNewCollectionName] = useState('');
+  const [userCollections, setUserCollections] = useState<{ id: string, name: string }[]>([]);
 
   const [images, setImages] = useState<ImagePicker.ImagePickerAsset[]>([]);
   const [loading, setLoading] = useState(false);
 
   const pickImage = async () => {
-    // ... (ta funkcja pozostaje bez zmian)
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsMultipleSelection: true,
@@ -39,7 +40,6 @@ export default function AddItemScreen() {
   };
 
   const uploadImage = async (image: ImagePicker.ImagePickerAsset) => {
-    // ... (ta funkcja pozostaje bez zmian)
     if (!image.uri) throw new Error("No image uri");
     const arraybuffer = await fetch(image.uri).then((res) => res.arrayBuffer());
     const fileExt = image.uri.split('.').pop()?.toLowerCase() ?? 'jpeg';
@@ -52,45 +52,101 @@ export default function AddItemScreen() {
   };
 
   const handleAddItem = async () => {
-    if (!name || !user || images.length === 0) {
-        Alert.alert("Błąd", "Wypełnij nazwę i dodaj przynajmniej jedno zdjęcie.");
-        return;
-    };
-    setLoading(true);
+  if (!name || !user || images.length === 0) {
+    Alert.alert("Błąd", "Wypełnij nazwę i dodaj przynajmniej jedno zdjęcie.");
+    return;
+  }
+  setLoading(true);
 
-    try {
-      // 1. Wysyłanie zdjęć (bez zmian)
-      const uploadedPaths = await Promise.all(images.map(image => uploadImage(image)));
-      const imageUrls = uploadedPaths.map(path => {
-        const { data } = supabase.storage.from('itemimages').getPublicUrl(path);
-        return data.publicUrl;
-      });
+  try {
+    let collectionId: string | null = null;
+    const collectionName = newCollectionName.trim();
 
-      // === ZAKTUALIZOWANY OBIEKT DO ZAPISU ===
-      const newItem = {
-        name: name,
-        description: description,
-        user_id: user.id,
-        image_urls: imageUrls,
-        year: year ? parseInt(year, 10) : null, // Konwertujemy na liczbę lub null
-        author: author || null,
-        is_for_sale: isForSale,
-        price: isForSale && price ? parseFloat(price) : null, // Cenę zapisujemy tylko, gdy jest na sprzedaż
-      };
+    // === KROK 1: Sprawdź, czy trzeba stworzyć nową kolekcję ===
+    if (collectionName !== '') {
+      // Krok 1: Sprawdź, czy kolekcja o tej nazwie już istnieje dla tego użytkownika
+      const { data: existingCollection, error: findError } = await supabase
+        .from('collections')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('name', collectionName) // Szukaj po nazwie
+        .single(); // Oczekujemy jednego wyniku lub błędu/null
 
-      // 2. Zapis do bazy danych
-      const { error: insertError } = await supabase.from('items').insert(newItem);
-      if (insertError) throw insertError;
+      if (findError && findError.code !== 'PGRST116') { // Ignoruj błąd "0 rows"
+        throw findError;
+      }
+      
+      if (existingCollection) {
+        // Krok 2a: Jeśli kolekcja istnieje, użyj jej ID
+        collectionId = existingCollection.id;
+        console.log('Znaleziono istniejącą kolekcję, ID:', collectionId);
+      } else {
+        // Krok 2b: Jeśli nie istnieje, stwórz nową
+        const { data: newCollection, error: createError } = await supabase
+          .from('collections')
+          .insert({ name: collectionName, user_id: user.id })
+          .select('id')
+          .single();
+        
+        if (createError) throw createError;
 
-      Alert.alert('Sukces!', 'Przedmiot został dodany.');
-      router.back();
-
-    } catch (error: any) {
-      Alert.alert('Błąd', error.message);
-    } finally {
-        setLoading(false);
+        collectionId = newCollection.id;
+        console.log('Stworzono nową kolekcję, ID:', collectionId);
+      }
     }
-  };
+    
+    // Krok 2: Wysyłanie zdjęć (logika bez zmian)
+    const uploadedPaths = await Promise.all(images.map(image => uploadImage(image)));
+    const imageUrls = uploadedPaths.map(path => {
+      const { data } = supabase.storage.from('itemimages').getPublicUrl(path);
+      return data.publicUrl;
+    });
+
+    // === KROK 3: Przygotuj dane przedmiotu z ID kolekcji ===
+    const newItem = {
+      name: name,
+      description: description,
+      user_id: user.id,
+      image_urls: imageUrls,
+      year: year ? parseInt(year, 10) : null,
+      author: author || null,
+      is_for_sale: isForSale,
+      price: isForSale && price ? parseFloat(price) : null,
+      collection_id: collectionId, // <-- PRZYPISUJEMY ID KOLEKCJI
+    };
+
+    // Krok 4: Zapisz przedmiot do bazy
+    const { error: insertError } = await supabase.from('items').insert(newItem);
+    if (insertError) throw insertError;
+
+    Alert.alert('Sukces!', 'Przedmiot został dodany.');
+    router.back();
+
+  } catch (error: any) {
+    Alert.alert('Błąd', error.message);
+  } finally {
+    setLoading(false);
+  }
+};
+
+// Użytkownik zobaczy nowe kolekcje za każdym razem, bez restartu 
+useFocusEffect(
+  useCallback(() => {
+    const fetchCollections = async () => {
+      if (!user) return;
+      const { data, error } = await supabase
+        .from('collections')
+        .select('id, name')
+        .eq('user_id', user.id);
+      
+      if (data) {
+        setUserCollections(data);
+      }
+    };
+    fetchCollections();
+  }, [user])
+);
+
 
   return (
     <ScrollView 
@@ -122,6 +178,31 @@ export default function AddItemScreen() {
         placeholder="np. Edycja limitowana z 1999 roku..."
         placeholderTextColor={colors.textSecondary}
       />
+      <Text style={[styles.label, { color: colors.text }]}>Kolekcja</Text>
+      <TextInput 
+        style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]} 
+        value={newCollectionName} 
+        onChangeText={setNewCollectionName}
+        placeholder="Wpisz nazwę nowej lub wybierz z listy"
+        placeholderTextColor={colors.textSecondary}
+      />
+
+        {userCollections.length > 0 && (
+          <View style={styles.suggestionsContainer}>
+            <Text style={[styles.suggestionsHeader, { color: colors.textSecondary }]}>Twoje kolekcje:</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                {userCollections.map((collection) => (
+              <Pressable 
+                key={collection.id} 
+                style={[styles.suggestionChip, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                onPress={() => setNewCollectionName(collection.name)}
+              >
+            <Text style={{ color: colors.text }}>{collection.name}</Text>
+              </Pressable>
+                ))}
+              </ScrollView>
+          </View>
+        )}
       
       <Text style={[styles.label, { color: colors.text }]}>Autor</Text>
       <TextInput 
@@ -233,5 +314,19 @@ const styles = StyleSheet.create({
       height: 100,
       borderRadius: 8,
       margin: 5,
-  }
+  },
+  suggestionsContainer: {
+  marginBottom: Spacing.medium,
+  },
+  suggestionsHeader: {
+  fontSize: FontSize.caption,
+  marginBottom: Spacing.small,
+  },
+  suggestionChip: {
+  paddingVertical: Spacing.small,
+  paddingHorizontal: Spacing.medium,
+  borderRadius: 20,
+  borderWidth: 1,
+  marginRight: Spacing.small,
+},
 });
