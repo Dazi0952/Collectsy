@@ -1,5 +1,5 @@
 // app/item/[id].tsx - WERSJA Z PEŁNYMI SZCZEGÓŁAMI
-import { View, Text, StyleSheet, ActivityIndicator, Image, ScrollView, Dimensions, Button, Alert, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Image, ScrollView, Dimensions, Button, Alert, Pressable, TextInput } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
 import { supabase } from '../../src/api/supabase';
@@ -22,6 +22,16 @@ type ItemDetails = {
   user_id: string;
 };
 
+type Comment = {
+  id: string;
+  content: string;
+  created_at: string;
+  profiles: { // POJEDYNCZY OBIEKT, NIE TABLICA
+    username: string;
+    avatar_url: string | null;
+  } [] | null;
+};
+
 export default function ItemDetailScreen() {
   const { id } = useLocalSearchParams();
   const { user } = useAuth(); // Pobieramy zalogowanego użytkownika
@@ -32,6 +42,8 @@ export default function ItemDetailScreen() {
   const colors = theme === 'light' ? lightTheme : darkTheme;
   const [likeCount, setLikeCount] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [newComment, setNewComment] = useState('');
 
   useEffect(() => {
     if (id) {
@@ -43,9 +55,24 @@ export default function ItemDetailScreen() {
   setLoading(true);
   try {
     // Pobieramy dane przedmiotu i informacje o polubieniach równocześnie
-    const [itemRes, likeRes] = await Promise.all([
-      supabase.from('items').select('*, user_id').eq('id', id).single(),
-      supabase.from('likes').select('*', { count: 'exact' }).eq('item_id', id)
+    const [itemRes, likeRes, commentRes] = await Promise.all([
+      supabase.from('items')
+      .select(
+        '*, user_id')
+        .eq('id', id).single(),
+      supabase.from('likes')
+      .select(
+        '*', { count: 'exact' })
+        .eq('item_id', id),
+      supabase.from('comments')
+      .select(`
+      id,
+      content,
+      created_at,
+      profiles ( username, avatar_url )
+    `)
+    .eq('item_id', id)
+    .order('created_at', { ascending: false })
     ]);
     
     if (itemRes.error) throw itemRes.error;
@@ -53,6 +80,9 @@ export default function ItemDetailScreen() {
 
     if (likeRes.error) throw likeRes.error;
     setLikeCount(likeRes.count || 0);
+
+    if (commentRes.error) throw commentRes.error;
+    setComments(commentRes.data || []);
 
     // Sprawdź, czy zalogowany użytkownik już polubił ten przedmiot
     if (user) {
@@ -63,6 +93,44 @@ export default function ItemDetailScreen() {
     console.error("Błąd pobierania szczegółów przedmiotu:", error);
   } finally {
     setLoading(false);
+  }
+};
+
+const handleAddComment = async () => {
+  if (!user || newComment.trim() === '') return;
+  
+  const contentToPost = newComment.trim();
+  setNewComment(''); // Wyczyść pole od razu dla lepszego UX
+
+  const { data, error } = await supabase
+    .from('comments')
+    .insert({
+      item_id: id,
+      user_id: user.id,
+      content: contentToPost,
+    })
+    .select(`
+    id,
+    content,
+    created_at,
+    profiles ( username, avatar_url )
+  `)
+    .single();
+    console.log("Odpowiedź z INSERT:", JSON.stringify(data, null, 2));
+    
+  if (error) {
+  console.error("Błąd podczas dodawania komentarza:", error); // <-- Dodaj ten log
+  Alert.alert("Błąd", `Nie udało się dodać komentarza: ${error.message}`); // <-- Pokaż prawdziwy błąd
+  setNewComment(contentToPost);
+  } else if (data) {
+  // Stwórz nowy obiekt, upewniając się, że `profiles` jest tablicą
+  const newCommentData: Comment = {
+    ...data,
+    profiles: Array.isArray(data.profiles) ? data.profiles : [data.profiles]
+  };
+  
+  // Dodaj nowy, ujednolicony komentarz do stanu
+  setComments(prevComments => [newCommentData, ...prevComments]);
   }
 };
 
@@ -153,7 +221,48 @@ const toggleLike = async () => {
     />
     <Text style={[styles.likeCount, { color: colors.text }]}>{likeCount}</Text>
   </Pressable>
-  {/* Tu mogą być inne przyciski, np. "Skomentuj" */}
+  <View style={styles.commentsSection}>
+  <Text style={[styles.sectionTitle, { color: colors.text }]}>Komentarze ({comments.length})</Text>
+  
+  {/* Formularz dodawania nowego komentarza */}
+  <View style={styles.addCommentContainer}>
+    <TextInput
+      style={[styles.commentInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
+      placeholder="Dodaj komentarz..."
+      placeholderTextColor={colors.textSecondary}
+      value={newComment}
+      onChangeText={setNewComment}
+    />
+    <Pressable onPress={handleAddComment} style={[styles.sendButton, { backgroundColor: colors.primary }]}>
+      <Ionicons name="send" size={20} color="white" />
+    </Pressable>
+  </View>
+  
+  {/* Lista istniejących komentarzy */}
+  {comments.map(comment => {
+    const authorProfile = (comment.profiles && comment.profiles.length > 0) 
+    ? comment.profiles[0] 
+    : null;
+  const avatarSeed = authorProfile?.username || 'anon';
+
+  return (
+    <View key={comment.id} style={styles.commentContainer}>
+      <Image 
+        source={{ uri: authorProfile?.avatar_url || `https://api.dicebear.com/7.x/initials/png?seed=${avatarSeed}` }} 
+        style={styles.commentAvatar} 
+      />
+      <View style={[styles.commentBubble, { backgroundColor: colors.surface }]}>
+        <Text style={[styles.commentUsername, { color: colors.text }]}>
+          {authorProfile?.username || 'Użytkownik usunięty'}
+        </Text>
+        <Text style={[styles.commentContent, { color: colors.text }]}>
+          {comment.content}
+        </Text>
+      </View>
+    </View>
+  );
+})}
+</View>
 </View>
 
     <View style={styles.detailsContainer}>
@@ -184,6 +293,8 @@ const toggleLike = async () => {
           <Button title="Edytuj" onPress={handleEdit} color={colors.primary} />
           <Button title="Usuń" onPress={handleDelete} color={colors.danger} />
         </View>
+
+        
       )}
     </ScrollView>
   );
@@ -266,4 +377,14 @@ likeCount: {
   fontSize: FontSize.body,
   fontWeight: '600',
 },
+commentsSection: { paddingHorizontal: Spacing.medium },
+sectionTitle: { fontSize: FontSize.headline, fontWeight: 'bold', marginBottom: Spacing.medium },
+addCommentContainer: { flexDirection: 'row', marginBottom: Spacing.large },
+commentInput: { flex: 1, borderWidth: 1, borderRadius: 20, paddingHorizontal: 15, paddingVertical: 10, marginRight: Spacing.small },
+sendButton: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
+commentContainer: { flexDirection: 'row', marginBottom: Spacing.medium },
+commentAvatar: { width: 40, height: 40, borderRadius: 20, marginRight: Spacing.small },
+commentBubble: { flex: 1, backgroundColor: Colors.surface, borderRadius: 15, padding: Spacing.medium },
+commentUsername: { fontWeight: 'bold', marginBottom: 4 },
+commentContent: { lineHeight: 20 },
 });
