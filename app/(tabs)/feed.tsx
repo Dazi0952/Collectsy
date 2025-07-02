@@ -1,6 +1,6 @@
 // app/(tabs)/feed.tsx
 import { View, Text, StyleSheet, FlatList, Image, ActivityIndicator, Pressable, TextInput } from 'react-native';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../src/api/supabase';
 import { Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,6 +21,7 @@ export default function FeedScreen() {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     fetchPublicItems();
@@ -42,6 +43,12 @@ export default function FeedScreen() {
     }
     setLoading(false);
   };
+  const onRefresh = useCallback(async () => {
+  setRefreshing(true);
+  await fetchPublicItems();
+  setRefreshing(false);
+}, []);
+  
 
   if (loading) {
     return <ActivityIndicator size="large" color={colors.primary} style={{ flex: 1, backgroundColor: colors.background }} />;
@@ -68,6 +75,8 @@ export default function FeedScreen() {
         data={filteredItems}
         keyExtractor={(item) => item.id}
         numColumns={2}
+        onRefresh={onRefresh}
+        refreshing={refreshing}
         renderItem={({ item }) => (
           <Link href={`/item/${item.id}`} asChild>
             <Pressable style={[styles.itemContainer, { backgroundColor: colors.surface }]}>

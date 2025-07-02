@@ -35,61 +35,50 @@ export default function ProfileScreen() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [collections, setCollections] = useState<CollectionWithCover[]>([]);
-
+  const [refreshing, setRefreshing] = useState(false);
 
   // Używamy useFocusEffect, aby odświeżać dane za każdym razem, gdy ekran jest widoczny
+  const fetchUserData = useCallback(async () => {
+    if (!user) {
+      setProfile(null);
+      setCollections([]);
+      return;
+    }
+    try {
+      const [profileResponse, collectionsResponse] = await Promise.all([
+        supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
+        supabase.rpc('get_collections_with_covers', { user_id_param: user.id })
+      ]);
+
+      if (profileResponse.error) throw profileResponse.error;
+      setProfile(profileResponse.data);
+
+      if (collectionsResponse.error) throw collectionsResponse.error;
+      setCollections(collectionsResponse.data || []);
+
+    } catch (error) {
+      console.error("Błąd podczas pobierania danych użytkownika:", error);
+    }
+  }, [user]);
+
+  // Hook do ładowania danych przy wejściu na ekran
   useFocusEffect(
-  useCallback(() => {
-    const fetchUserData = async () => {
-      if (!user) {
-        setProfile(null);
-        setCollections([]); // Ustawiamy pustą tablicę kolekcji
-        setLoading(false);
-        return;
-      }
+    useCallback(() => {
       setLoading(true);
+      fetchUserData().finally(() => setLoading(false));
+    }, [fetchUserData])
+  );
 
-      try {
-        // === ZMIENIONA LOGIKA POBIERANIA DANYCH ===
+  // Funkcja obsługująca "pull-to-refresh"
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchUserData();
+    setRefreshing(false);
+  }, [fetchUserData]);
 
-        // 1. Pobierz profil (to zapytanie pozostaje bez zmian)
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .maybeSingle();
-        
-        if (profileError) throw profileError;
-        setProfile(profileData);
-
-        // 2. Pobierz kolekcje z okładkami za pomocą funkcji RPC
-        const { data: collectionsData, error: collectionsError } = await supabase.rpc(
-          'get_collections_with_covers', 
-          { user_id_param: user.id }
-        );
-        console.log('RPC Response:', { collectionsData, collectionsError });
-
-        if (collectionsError) throw collectionsError;
-        setCollections(collectionsData || []);
-      
-      } catch (error) {
-        console.error("Błąd podczas pobierania danych użytkownika:", error);
-        // Możesz dodać Alert, jeśli chcesz poinformować użytkownika
-      } finally {
-        // 3. Zawsze zakończ ładowanie
-        setLoading(false);
-      }
-    };
-
-    fetchUserData();
-  }, [user])
-);
-
-  if (loading && !profile) { // Pokaż wskaźnik ładowania tylko przy pierwszym ładowaniu
-    return <ActivityIndicator size="large" color={colors.primary} style={styles.centered} />;
+  if (loading) {
+    return <ActivityIndicator size="large" color={colors.primary} style={[styles.centered, { backgroundColor: colors.background }]} />;
   }
-
-  console.log("Renderuję FlatList z danymi:", collections);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -120,6 +109,8 @@ export default function ProfileScreen() {
         extraData={collections}
         keyExtractor={(item) => item.id}
         numColumns={2}
+        onRefresh={onRefresh}
+        refreshing={refreshing}
         renderItem={({ item: collection }) => (
   <Link href={`/collection/${collection.id}?name=${collection.name}`} asChild>
     <Pressable style={{ 
