@@ -1,7 +1,7 @@
 // app/item/[id].tsx - WERSJA Z PEŁNYMI SZCZEGÓŁAMI
 import { View, Text, StyleSheet, ActivityIndicator, Image, ScrollView, Dimensions, Button, Alert, Pressable, TextInput } from 'react-native';
-import React, { useState, useEffect } from 'react';
-import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useLocalSearchParams, Stack, useRouter, Link } from 'expo-router';
 import { supabase } from '../../src/api/supabase';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useTheme } from '../../src/context/ThemeContext';
@@ -20,6 +20,9 @@ type ItemDetails = {
   is_for_sale: boolean;
   image_urls: string[];
   user_id: string;
+  profiles: {
+    username: string;
+  } | null;
 };
 
 type Comment = {
@@ -51,56 +54,45 @@ export default function ItemDetailScreen() {
     }
   }, [id]);
 
-  const fetchItemDetails = async () => {
-  setLoading(true);
-  try {
-    // Pobieramy dane przedmiotu i informacje o polubieniach równocześnie
-    const [itemRes, likeRes, commentRes] = await Promise.all([
-      supabase.from('items')
-      .select(
-        '*, user_id')
-        .eq('id', id).single(),
-      supabase.from('likes')
-      .select(
-        '*', { count: 'exact' })
-        .eq('item_id', id),
-      supabase.from('comments')
-      .select(`
-      id,
-      content,
-      created_at,
-      profiles ( username, avatar_url )
-    `)
-    .eq('item_id', id)
-    .order('created_at', { ascending: false })
-    ]);
-    
-    if (itemRes.error) throw itemRes.error;
-    setItem(itemRes.data);
+  const fetchItemDetails = useCallback(async () => {
+    if (!id) return;
+    setLoading(true);
+    try {
+      const [itemRes, likeRes, commentRes] = await Promise.all([
+        supabase.from('items').select('*, profiles(username)').eq('id', id).single(),
+        supabase.from('likes').select('*', { count: 'exact' }).eq('item_id', id),
+        supabase.from('comments').select(`*, profiles(username, avatar_url)`).eq('item_id', id).order('created_at', { ascending: false })
+      ]);
+      
+      if (itemRes.error) throw itemRes.error;
+      setItem(itemRes.data);
 
-    if (likeRes.error) throw likeRes.error;
-    setLikeCount(likeRes.count || 0);
+      if (likeRes.error) throw likeRes.error;
+      setLikeCount(likeRes.count || 0);
+      if (user) {
+        const userLike = likeRes.data?.find(like => like.user_id === user.id);
+        setIsLiked(!!userLike);
+      }
 
-    if (commentRes.error) throw commentRes.error;
-    setComments(commentRes.data || []);
-
-    // Sprawdź, czy zalogowany użytkownik już polubił ten przedmiot
-    if (user) {
-      const userLike = likeRes.data?.find(like => like.user_id === user.id);
-      setIsLiked(!!userLike); // Ustawia na true jeśli znaleziono, false jeśli nie
+      if (commentRes.error) throw commentRes.error;
+      setComments(commentRes.data || []);
+    } catch (error) {
+      console.error("Błąd pobierania szczegółów przedmiotu:", error);
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error("Błąd pobierania szczegółów przedmiotu:", error);
-  } finally {
-    setLoading(false);
-  }
-};
+  }, [id, user]);
+
+  useEffect(() => {
+    fetchItemDetails();
+  }, [fetchItemDetails]);
 
 const handleAddComment = async () => {
   if (!user || newComment.trim() === '') return;
   
   const contentToPost = newComment.trim();
   setNewComment(''); // Wyczyść pole od razu dla lepszego UX
+  
 
   const { data, error } = await supabase
     .from('comments')
@@ -193,10 +185,8 @@ const toggleLike = async () => {
   router.push(`/item/edit?id=${item.id}`);
   };
 
-  if (loading) {
-    return <ActivityIndicator size="large" color={colors.primary} style={{ flex: 1, backgroundColor: colors.background }} />;
-  }
-  if (!item) return <View style={styles.centered}><Text>Nie znaleziono przedmiotu.</Text></View>;
+  if (loading) return <ActivityIndicator size="large" color={colors.primary} style={[styles.centered, {backgroundColor: colors.background}]} />;
+  if (!item) return <View style={styles.centered}><Text style={{color: colors.text}}>Nie znaleziono przedmiotu.</Text></View>;
 
   // Sprawdzamy, czy zalogowany użytkownik jest właścicielem przedmiotu
   const isOwner = user?.id === item.user_id;
@@ -273,10 +263,14 @@ const toggleLike = async () => {
         <Text style={[styles.description, { color: colors.text }]}>{item.description}</Text>
         
         <View style={[styles.metaContainer, { borderTopColor: colors.border }]}>
-          {item.author && (
+          {item.profiles?.username && (
             <View style={styles.metaItem}>
               <Text style={[styles.metaLabel, { color: colors.textSecondary }]}>Autor:</Text>
-              <Text style={[styles.metaValue, { color: colors.text }]}>{item.author}</Text>
+              <Link href={`/profile/${item.user_id}`} asChild>
+                <Pressable>
+                  <Text style={[styles.metaValue, { color: colors.primary, textDecorationLine: 'underline' }]}>{item.profiles.username}</Text>
+                </Pressable>
+              </Link>
             </View>
           )}
           {item.year && (

@@ -1,14 +1,13 @@
 // app/(tabs)/profile.tsx - POPRAWIONA I KOMPLETNA WERSJA
 import { View, Text, StyleSheet, FlatList, Image, ActivityIndicator, Pressable } from 'react-native';
 import React, { useState, useCallback } from 'react';
-import { supabase } from '../../src/api/supabase';
-import { useAuth } from '../../src/hooks/useAuth';
+import { supabase } from '../../api/supabase';
+import { useAuth } from '../../hooks/useAuth';
 import { Link, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { lightTheme, darkTheme, Spacing, FontSize } from '../../src/constants/theme';
-import { useTheme } from '../../src/context/ThemeContext';
+import { lightTheme, darkTheme, Spacing, FontSize } from '../../constants/theme';
+import { useTheme } from '../../context/ThemeContext';
 import { Colors } from 'react-native/Libraries/NewAppScreen';
-import UserProfile from '../../src/components/profile/UserProfile';
 
 type Item = {
   id: string;
@@ -27,40 +26,41 @@ type CollectionWithCover = {
   cover_image_url: string | null;
 };
 
-export default function ProfileScreen() {
-  const { user, loading } = useAuth();
-   const { theme } = useTheme();
+type UserProfileProps = {
+  userId: string;
+};
+
+export default function UserProfile({ userId }: UserProfileProps) {
+  const { user: currentUser } = useAuth();
+  const { theme } = useTheme();
   const colors = theme === 'light' ? lightTheme : darkTheme;
-/*
+
   const [items, setItems] = useState<Item[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [collections, setCollections] = useState<CollectionWithCover[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
+  const isMyProfile = currentUser?.id === userId;
+
   // Używamy useFocusEffect, aby odświeżać dane za każdym razem, gdy ekran jest widoczny
   const fetchUserData = useCallback(async () => {
-    if (!user) {
-      setProfile(null);
-      setCollections([]);
-      return;
-    }
     try {
-      const [profileResponse, collectionsResponse] = await Promise.all([
-        supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
-        supabase.rpc('get_collections_with_covers', { user_id_param: user.id })
-      ]);
-
-      if (profileResponse.error) throw profileResponse.error;
-      setProfile(profileResponse.data);
-
-      if (collectionsResponse.error) throw collectionsResponse.error;
-      setCollections(collectionsResponse.data || []);
+      const { data: profileData, error: profileError } = await supabase
+      .from('profiles').select('*').eq('id', userId).maybeSingle();
+      if (profileError) throw profileError;
+    setProfile(profileData);
+    
+    const { data: collectionsData, error: collectionsError } = await supabase.rpc(
+      'get_collections_with_covers', { user_id_param: userId }
+    );
+    if (collectionsError) throw collectionsError;
+    setCollections(collectionsData || []);
 
     } catch (error) {
       console.error("Błąd podczas pobierania danych użytkownika:", error);
     }
-  }, [user]);
+  }, [userId]);
 
   // Hook do ładowania danych przy wejściu na ekran
   useFocusEffect(
@@ -76,18 +76,43 @@ export default function ProfileScreen() {
     await fetchUserData();
     setRefreshing(false);
   }, [fetchUserData]);
-*/
+
   if (loading) {
-    return <ActivityIndicator size="large" color={colors.primary} style={{ flex: 1, backgroundColor: colors.background }} />;
+    return <ActivityIndicator size="large" color={colors.primary} style={[styles.centered, { backgroundColor: colors.background }]} />;
   }
 
-  // Jeśli nie ma użytkownika po załadowaniu, nie renderuj nic (lub ekran błędu)
-  if (!user) {
-    return null;
-  }
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={styles.profileHeader}>
+        <Image source={{ uri: profile?.avatar_url || `https://api.dicebear.com/7.x/initials/png?seed=${profile?.username}` }} style={styles.avatar} />
+        <View style={styles.statsContainer}>
+          <View style={styles.stat}><Text style={[styles.statNumber, { color: colors.text }]}>{collections.length}</Text><Text style={[styles.statLabel, { color: colors.textSecondary }]}>Kolekcji</Text></View>
+        </View>
+      </View>
+      <Text style={[styles.username, { color: colors.text }]}>{profile?.username}</Text>
 
-  // Jeśli jest użytkownik, renderuj komponent profilu z jego ID
-  return <UserProfile userId={user.id} />;
+      {isMyProfile ? (
+        <View style={styles.actionsContainer}><Link href="/edit-profile" asChild><Pressable style={[styles.button, { backgroundColor: colors.surface }]}><Text style={[styles.buttonText, { color: colors.text }]}>Edytuj Profil</Text></Pressable></Link></View>
+      ) : (
+        <View style={styles.actionsContainer}><Pressable style={[styles.button, { backgroundColor: colors.primary }]}><Text style={[styles.buttonText, { color: 'white' }]}>Obserwuj</Text></Pressable></View>
+      )}
+
+      <FlatList
+        data={collections}
+        keyExtractor={(item) => item.id}
+        numColumns={2}
+        onRefresh={onRefresh}
+        refreshing={refreshing}
+        renderItem={({ item: collection }) => (
+          <Link href={`/collection/${collection.id}?name=${collection.name}`} asChild>
+            <Pressable style={styles.collectionContainer}><Image source={{ uri: collection.cover_image_url || 'https://via.placeholder.com/300' }} style={styles.collectionImage} /><View style={styles.collectionOverlay}><Text style={styles.collectionName}>{collection.name}</Text></View></Pressable>
+          </Link>
+        )}
+        contentContainerStyle={{ paddingHorizontal: Spacing.small, flexGrow: 1 }}
+        ListEmptyComponent={<View style={styles.emptyContainer}><Text style={[styles.emptyText, { color: colors.textSecondary }]}>Brak kolekcji.</Text></View>}
+      />
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
