@@ -1,10 +1,9 @@
-// app/register.tsx - WERSJA DLA SUPABASE
 import { Text, View, StyleSheet, TextInput, Pressable, Alert } from 'react-native';
 import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { Colors , FontSize , Spacing, lightTheme, darkTheme } from '../src/constants/theme'
 import { useTheme } from '../src/context/ThemeContext'
-import { supabase } from '../src/api/supabase'; // Importujemy nasz klient Supabase
+import { supabase } from '../src/api/supabase';
 
 export default function RegisterScreen() {
   const [email, setEmail] = useState('');
@@ -61,7 +60,6 @@ export default function RegisterScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Text style={[styles.title, { color: colors.text }]}>Stwórz konto</Text>
-      {/* Reszta JSX jest identyczna jak w wersji Firebase */}
       <TextInput
         style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
         placeholder="Nazwa użytkownika"

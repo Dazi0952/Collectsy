@@ -41,26 +41,59 @@ export default function UserProfile({ userId }: UserProfileProps) {
   const [collections, setCollections] = useState<CollectionWithCover[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followerCount, setFollowerCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+
   const isMyProfile = currentUser?.id === userId;
 
   // Używamy useFocusEffect, aby odświeżać dane za każdym razem, gdy ekran jest widoczny
   const fetchUserData = useCallback(async () => {
-    try {
-      const { data: profileData, error: profileError } = await supabase
-      .from('profiles').select('*').eq('id', userId).maybeSingle();
-      if (profileError) throw profileError;
-    setProfile(profileData);
-    
-    const { data: collectionsData, error: collectionsError } = await supabase.rpc(
-      'get_collections_with_covers', { user_id_param: userId }
-    );
-    if (collectionsError) throw collectionsError;
-    setCollections(collectionsData || []);
-
-    } catch (error) {
-      console.error("Błąd podczas pobierania danych użytkownika:", error);
+    if (!userId) {
+    setLoading(false);
+    return;
     }
-  }, [userId]);
+    try {
+      const currentUserId = currentUser?.id;
+      // Przygotowujemy wszystkie zapytania, które chcemy wykonać
+    const profilePromise = supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+    const collectionsPromise = supabase.rpc('get_collections_with_covers', { user_id_param: userId });
+    const followerPromise = supabase.rpc('get_follower_count', { profile_id: userId });
+    const followingPromise = supabase.rpc('get_following_count', { profile_id: userId });
+    
+    // Zapytanie o relację "follow" wykonujemy TYLKO, jeśli użytkownik jest zalogowany
+    const checkFollowPromise = currentUserId 
+      ? supabase.from('followers').select('*', { count: 'exact' }).match({ follower_id: currentUserId, following_id: userId })
+      : Promise.resolve({ data: null, error: null, count: 0 }); // Zwróć pustą obietnicę, jeśli nikt nie jest zalogowany
+
+    // Wykonujemy wszystkie zapytania równocześnie
+    const [profileRes, collectionsRes, followerRes, followingRes, checkFollowRes] = await Promise.all([
+      profilePromise,
+      collectionsPromise,
+      followerPromise,
+      followingPromise,
+      checkFollowPromise
+    ]);
+
+    if (profileRes.error) throw profileRes.error;
+    setProfile(profileRes.data);
+
+    if (collectionsRes.error) throw collectionsRes.error;
+    setCollections(collectionsRes.data || []);
+    
+    if (followerRes.error) throw followerRes.error;
+    setFollowerCount(followerRes.data || 0);
+
+    if (followingRes.error) throw followingRes.error;
+    setFollowingCount(followingRes.data || 0);
+
+    if (checkFollowRes.error) throw checkFollowRes.error;
+    setIsFollowing((checkFollowRes.count || 0) > 0);
+
+  } catch (error) {
+    console.error("Błąd podczas pobierania danych użytkownika:", error);
+  }
+}, [userId, currentUser]);
 
   // Hook do ładowania danych przy wejściu na ekran
   useFocusEffect(
@@ -77,6 +110,28 @@ export default function UserProfile({ userId }: UserProfileProps) {
     setRefreshing(false);
   }, [fetchUserData]);
 
+  const toggleFollow = async () => {
+  if (!currentUser || isMyProfile) return;
+
+  // Optymistyczna aktualizacja UI
+  setIsFollowing(!isFollowing);
+  setFollowerCount(prev => isFollowing ? prev - 1 : prev + 1);
+
+  if (isFollowing) {
+    // Przestań obserwować
+    await supabase.from('followers').delete().match({
+      follower_id: currentUser.id,
+      following_id: userId,
+    });
+  } else {
+    // Zacznij obserwować
+    await supabase.from('followers').insert({
+      follower_id: currentUser.id,
+      following_id: userId,
+    });
+  }
+};
+
   if (loading) {
     return <ActivityIndicator size="large" color={colors.primary} style={[styles.centered, { backgroundColor: colors.background }]} />;
   }
@@ -87,6 +142,14 @@ export default function UserProfile({ userId }: UserProfileProps) {
         <Image source={{ uri: profile?.avatar_url || `https://api.dicebear.com/7.x/initials/png?seed=${profile?.username}` }} style={styles.avatar} />
         <View style={styles.statsContainer}>
           <View style={styles.stat}><Text style={[styles.statNumber, { color: colors.text }]}>{collections.length}</Text><Text style={[styles.statLabel, { color: colors.textSecondary }]}>Kolekcji</Text></View>
+          <View style={styles.stat}>
+      <Text style={[styles.statNumber, { color: colors.text }]}>
+        {followerCount}
+      </Text>
+      <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+        Obserwujący
+      </Text>
+    </View>
         </View>
       </View>
       <Text style={[styles.username, { color: colors.text }]}>{profile?.username}</Text>
@@ -94,8 +157,23 @@ export default function UserProfile({ userId }: UserProfileProps) {
       {isMyProfile ? (
         <View style={styles.actionsContainer}><Link href="/edit-profile" asChild><Pressable style={[styles.button, { backgroundColor: colors.surface }]}><Text style={[styles.buttonText, { color: colors.text }]}>Edytuj Profil</Text></Pressable></Link></View>
       ) : (
-        <View style={styles.actionsContainer}><Pressable style={[styles.button, { backgroundColor: colors.primary }]}><Text style={[styles.buttonText, { color: 'white' }]}>Obserwuj</Text></Pressable></View>
-      )}
+        <View style={styles.actionsContainer}>
+    <Pressable 
+      onPress={toggleFollow}
+      style={[
+        styles.button, 
+        isFollowing ? { backgroundColor: colors.surface } : { backgroundColor: colors.primary }
+      ]}
+    >
+      <Text style={[
+        styles.buttonText, 
+        isFollowing ? { color: colors.text } : { color: 'white' }
+      ]}>
+        {isFollowing ? 'Obserwujesz' : 'Obserwuj'}
+      </Text>
+    </Pressable>
+  </View>
+  )}
 
       <FlatList
         data={collections}
