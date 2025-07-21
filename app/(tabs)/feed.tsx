@@ -1,7 +1,7 @@
 
 import { View, Text, StyleSheet, FlatList, Image, ActivityIndicator, Pressable, TextInput } from 'react-native';
 import React, { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../../src/api/supabase';
+import { supabase } from '@/api/supabase';
 import { Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors , FontSize , Spacing, lightTheme, darkTheme } from '../../src/constants/theme'
