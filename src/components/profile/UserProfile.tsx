@@ -1,4 +1,4 @@
-// app/(tabs)/profile.tsx - POPRAWIONA I KOMPLETNA WERSJA
+
 import { View, Text, StyleSheet, FlatList, Image, ActivityIndicator, Pressable } from 'react-native';
 import React, { useState, useCallback } from 'react';
 import { supabase } from '../../api/supabase';
@@ -47,55 +47,55 @@ export default function UserProfile({ userId }: UserProfileProps) {
 
   const isMyProfile = currentUser?.id === userId;
 
-  // Używamy useFocusEffect, aby odświeżać dane za każdym razem, gdy ekran jest widoczny
+  
   const fetchUserData = useCallback(async () => {
     if (!userId) {
-    setLoading(false);
-    return;
+      setLoading(false);
+      return;
     }
     try {
       const currentUserId = currentUser?.id;
-      // Przygotowujemy wszystkie zapytania, które chcemy wykonać
-    const profilePromise = supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
-    const collectionsPromise = supabase.rpc('get_collections_with_covers', { user_id_param: userId });
-    const followerPromise = supabase.rpc('get_follower_count', { profile_id: userId });
-    const followingPromise = supabase.rpc('get_following_count', { profile_id: userId });
-    
-    // Zapytanie o relację "follow" wykonujemy TYLKO, jeśli użytkownik jest zalogowany
-    const checkFollowPromise = currentUserId 
-      ? supabase.from('followers').select('*', { count: 'exact' }).match({ follower_id: currentUserId, following_id: userId })
-      : Promise.resolve({ data: null, error: null, count: 0 }); // Zwróć pustą obietnicę, jeśli nikt nie jest zalogowany
+      
+      const profilePromise = supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+      const collectionsPromise = supabase.rpc('get_collections_with_covers', { user_id_param: userId });
+      const followerPromise = supabase.rpc('get_follower_count', { profile_id: userId });
+      const followingPromise = supabase.rpc('get_following_count', { profile_id: userId });
 
-    // Wykonujemy wszystkie zapytania równocześnie
-    const [profileRes, collectionsRes, followerRes, followingRes, checkFollowRes] = await Promise.all([
-      profilePromise,
-      collectionsPromise,
-      followerPromise,
-      followingPromise,
-      checkFollowPromise
-    ]);
+      
+      const checkFollowPromise = currentUserId
+        ? supabase.from('followers').select('*', { count: 'exact' }).match({ follower_id: currentUserId, following_id: userId })
+        : Promise.resolve({ data: null, error: null, count: 0 }); 
 
-    if (profileRes.error) throw profileRes.error;
-    setProfile(profileRes.data);
+      
+      const [profileRes, collectionsRes, followerRes, followingRes, checkFollowRes] = await Promise.all([
+        profilePromise,
+        collectionsPromise,
+        followerPromise,
+        followingPromise,
+        checkFollowPromise
+      ]);
 
-    if (collectionsRes.error) throw collectionsRes.error;
-    setCollections(collectionsRes.data || []);
-    
-    if (followerRes.error) throw followerRes.error;
-    setFollowerCount(followerRes.data || 0);
+      if (profileRes.error) throw profileRes.error;
+      setProfile(profileRes.data);
 
-    if (followingRes.error) throw followingRes.error;
-    setFollowingCount(followingRes.data || 0);
+      if (collectionsRes.error) throw collectionsRes.error;
+      setCollections(collectionsRes.data || []);
 
-    if (checkFollowRes.error) throw checkFollowRes.error;
-    setIsFollowing((checkFollowRes.count || 0) > 0);
+      if (followerRes.error) throw followerRes.error;
+      setFollowerCount(followerRes.data || 0);
 
-  } catch (error) {
-    console.error("Błąd podczas pobierania danych użytkownika:", error);
-  }
-}, [userId, currentUser]);
+      if (followingRes.error) throw followingRes.error;
+      setFollowingCount(followingRes.data || 0);
 
-  // Hook do ładowania danych przy wejściu na ekran
+      if (checkFollowRes.error) throw checkFollowRes.error;
+      setIsFollowing((checkFollowRes.count || 0) > 0);
+
+    } catch (error) {
+      console.error("Błąd podczas pobierania danych użytkownika:", error);
+    }
+  }, [userId, currentUser]);
+
+  
   useFocusEffect(
     useCallback(() => {
       setLoading(true);
@@ -103,7 +103,7 @@ export default function UserProfile({ userId }: UserProfileProps) {
     }, [fetchUserData])
   );
 
-  // Funkcja obsługująca "pull-to-refresh"
+  
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await fetchUserData();
@@ -111,26 +111,26 @@ export default function UserProfile({ userId }: UserProfileProps) {
   }, [fetchUserData]);
 
   const toggleFollow = async () => {
-  if (!currentUser || isMyProfile) return;
+    if (!currentUser || isMyProfile) return;
 
-  // Optymistyczna aktualizacja UI
-  setIsFollowing(!isFollowing);
-  setFollowerCount(prev => isFollowing ? prev - 1 : prev + 1);
+    
+    setIsFollowing(!isFollowing);
+    setFollowerCount(prev => isFollowing ? prev - 1 : prev + 1);
 
-  if (isFollowing) {
-    // Przestań obserwować
-    await supabase.from('followers').delete().match({
-      follower_id: currentUser.id,
-      following_id: userId,
-    });
-  } else {
-    // Zacznij obserwować
-    await supabase.from('followers').insert({
-      follower_id: currentUser.id,
-      following_id: userId,
-    });
-  }
-};
+    if (isFollowing) {
+      
+      await supabase.from('followers').delete().match({
+        follower_id: currentUser.id,
+        following_id: userId,
+      });
+    } else {
+      
+      await supabase.from('followers').insert({
+        follower_id: currentUser.id,
+        following_id: userId,
+      });
+    }
+  };
 
   if (loading) {
     return <ActivityIndicator size="large" color={colors.primary} style={[styles.centered, { backgroundColor: colors.background }]} />;
@@ -143,13 +143,13 @@ export default function UserProfile({ userId }: UserProfileProps) {
         <View style={styles.statsContainer}>
           <View style={styles.stat}><Text style={[styles.statNumber, { color: colors.text }]}>{collections.length}</Text><Text style={[styles.statLabel, { color: colors.textSecondary }]}>Kolekcji</Text></View>
           <View style={styles.stat}>
-      <Text style={[styles.statNumber, { color: colors.text }]}>
-        {followerCount}
-      </Text>
-      <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-        Obserwujący
-      </Text>
-    </View>
+            <Text style={[styles.statNumber, { color: colors.text }]}>
+              {followerCount}
+            </Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+              Obserwujący
+            </Text>
+          </View>
         </View>
       </View>
       <Text style={[styles.username, { color: colors.text }]}>{profile?.username}</Text>
@@ -158,22 +158,22 @@ export default function UserProfile({ userId }: UserProfileProps) {
         <View style={styles.actionsContainer}><Link href="/edit-profile" asChild><Pressable style={[styles.button, { backgroundColor: colors.surface }]}><Text style={[styles.buttonText, { color: colors.text }]}>Edytuj Profil</Text></Pressable></Link></View>
       ) : (
         <View style={styles.actionsContainer}>
-    <Pressable 
-      onPress={toggleFollow}
-      style={[
-        styles.button, 
-        isFollowing ? { backgroundColor: colors.surface } : { backgroundColor: colors.primary }
-      ]}
-    >
-      <Text style={[
-        styles.buttonText, 
-        isFollowing ? { color: colors.text } : { color: 'white' }
-      ]}>
-        {isFollowing ? 'Obserwujesz' : 'Obserwuj'}
-      </Text>
-    </Pressable>
-  </View>
-  )}
+          <Pressable
+            onPress={toggleFollow}
+            style={[
+              styles.button,
+              isFollowing ? { backgroundColor: colors.surface } : { backgroundColor: colors.primary }
+            ]}
+          >
+            <Text style={[
+              styles.buttonText,
+              isFollowing ? { color: colors.text } : { color: 'white' }
+            ]}>
+              {isFollowing ? 'Obserwujesz' : 'Obserwuj'}
+            </Text>
+          </Pressable>
+        </View>
+      )}
 
       <FlatList
         data={collections}
@@ -228,29 +228,29 @@ const styles = StyleSheet.create({
   button: { paddingVertical: 10, borderRadius: 8, alignItems: 'center' },
   buttonText: { fontWeight: '600' },
   collectionContainer: {
-  flex: 1,
-  margin: Spacing.small,
-  aspectRatio: 1, // Zapewnia kwadratowy kształt
-  borderRadius: 12,
-  overflow: 'hidden', // Ważne, aby zaokrąglić też obrazek
-  backgroundColor: Colors.surface, // Użyj dynamicznego koloru
-},
-collectionImage: {
-  width: '100%',
-  height: '100%',
-},
-collectionOverlay: {
-  position: 'absolute',
-  bottom: 0,
-  left: 0,
-  right: 0,
-  backgroundColor: 'rgba(0, 0, 0, 0.4)', // Półprzezroczyste czarne tło
-  padding: Spacing.small,
-},
-collectionName: {
-  color: 'white',
-  fontSize: FontSize.subheadline,
-  fontWeight: 'bold',
-  textAlign: 'center',
-},
+    flex: 1,
+    margin: Spacing.small,
+    aspectRatio: 1, 
+    borderRadius: 12,
+    overflow: 'hidden', 
+    backgroundColor: Colors.surface, 
+  },
+  collectionImage: {
+    width: '100%',
+    height: '100%',
+  },
+  collectionOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)', 
+    padding: Spacing.small,
+  },
+  collectionName: {
+    color: 'white',
+    fontSize: FontSize.subheadline,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
 });

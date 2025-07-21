@@ -1,4 +1,4 @@
-// app/item/edit.tsx
+
 import { View, Text, TextInput, Button, StyleSheet, Alert, ScrollView, ActivityIndicator } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../src/api/supabase';
@@ -10,16 +10,16 @@ export default function EditItemScreen() {
   const { theme } = useTheme();
   const colors = theme === 'light' ? lightTheme : darkTheme;
   const router = useRouter();
-  const { id } = useLocalSearchParams(); // Pobieramy ID z parametrów URL
+  const { id } = useLocalSearchParams(); 
 
-  // Stany dla formularza
+  
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  // ... w przyszłości można dodać edycję innych pól
+  
 
   const [loading, setLoading] = useState(true);
 
-  // Efekt do pobrania danych przedmiotu na starcie
+  
   useEffect(() => {
     if (id) {
       fetchItemData();
@@ -37,7 +37,7 @@ export default function EditItemScreen() {
     if (error) {
       Alert.alert('Błąd', 'Nie udało się pobrać danych przedmiotu.');
     } else if (data) {
-      // Wypełniamy stany formularza pobranymi danymi
+      
       setName(data.name);
       setDescription(data.description);
     }
@@ -53,8 +53,8 @@ export default function EditItemScreen() {
 
     const { error } = await supabase
       .from('items')
-      .update({ name, description }) // Przekazujemy zaktualizowane dane
-      .eq('id', id); // Określamy, który wiersz zaktualizować
+      .update({ name, description }) 
+      .eq('id', id); 
 
     setLoading(false);
 
@@ -62,7 +62,7 @@ export default function EditItemScreen() {
       Alert.alert('Błąd', 'Nie udało się zaktualizować przedmiotu.');
     } else {
       Alert.alert('Sukces!', 'Zmiany zostały zapisane.');
-      router.back(); // Wróć do ekranu szczegółów
+      router.back(); 
     }
   };
 

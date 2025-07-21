@@ -1,4 +1,4 @@
-// app/edit-profile.tsx
+
 import { View, Text, StyleSheet, TextInput, Image, Pressable, Alert, ActivityIndicator } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../src/api/supabase';
@@ -52,9 +52,9 @@ export default function EditProfileScreen() {
     setLoading(true);
 
     try {
-      let publicAvatarUrl = avatarUrl; // Start with the existing URL
+      let publicAvatarUrl = avatarUrl; 
 
-      // 1. If a new avatar was selected, upload it
+      
       if (newAvatar) {
         const fileExt = newAvatar.uri.split('.').pop()?.toLowerCase() ?? 'jpeg';
         const filePath = `${user.id}/${Date.now()}.${fileExt}`;
@@ -67,12 +67,12 @@ export default function EditProfileScreen() {
 
         if (uploadError) throw uploadError;
         
-        // Get public URL of the newly uploaded file
+        
         const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
         publicAvatarUrl = data.publicUrl;
       }
 
-      // 2. Update the profiles table
+      
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ username, avatar_url: publicAvatarUrl })

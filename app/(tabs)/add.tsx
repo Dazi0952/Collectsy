@@ -1,4 +1,3 @@
-// app/(tabs)/add.tsx - PEŁNA, ROZBUDOWANA WERSJA
 import { View, Text, TextInput, Button, StyleSheet, Alert, Image, ScrollView, Switch, Pressable } from 'react-native';
 import React, { useCallback, useState } from 'react';
 import { supabase } from '../../src/api/supabase';
@@ -62,26 +61,26 @@ export default function AddItemScreen() {
     let collectionId: string | null = null;
     const collectionName = newCollectionName.trim();
 
-    // === KROK 1: Sprawdź, czy trzeba stworzyć nową kolekcję ===
+    
     if (collectionName !== '') {
-      // Krok 1: Sprawdź, czy kolekcja o tej nazwie już istnieje dla tego użytkownika
+      
       const { data: existingCollection, error: findError } = await supabase
         .from('collections')
         .select('id')
         .eq('user_id', user.id)
-        .eq('name', collectionName) // Szukaj po nazwie
-        .single(); // Oczekujemy jednego wyniku lub błędu/null
+        .eq('name', collectionName) 
+        .single(); 
 
-      if (findError && findError.code !== 'PGRST116') { // Ignoruj błąd "0 rows"
+      if (findError && findError.code !== 'PGRST116') { 
         throw findError;
       }
       
       if (existingCollection) {
-        // Krok 2a: Jeśli kolekcja istnieje, użyj jej ID
+        
         collectionId = existingCollection.id;
         console.log('Znaleziono istniejącą kolekcję, ID:', collectionId);
       } else {
-        // Krok 2b: Jeśli nie istnieje, stwórz nową
+        
         const { data: newCollection, error: createError } = await supabase
           .from('collections')
           .insert({ name: collectionName, user_id: user.id })
@@ -95,14 +94,14 @@ export default function AddItemScreen() {
       }
     }
     
-    // Krok 2: Wysyłanie zdjęć (logika bez zmian)
+    
     const uploadedPaths = await Promise.all(images.map(image => uploadImage(image)));
     const imageUrls = uploadedPaths.map(path => {
       const { data } = supabase.storage.from('itemimages').getPublicUrl(path);
       return data.publicUrl;
     });
 
-    // === KROK 3: Przygotuj dane przedmiotu z ID kolekcji ===
+    
     const newItem = {
       name: name,
       description: description,
@@ -112,10 +111,10 @@ export default function AddItemScreen() {
       author: author || null,
       is_for_sale: isForSale,
       price: isForSale && price ? parseFloat(price) : null,
-      collection_id: collectionId, // <-- PRZYPISUJEMY ID KOLEKCJI
+      collection_id: collectionId, 
     };
 
-    // Krok 4: Zapisz przedmiot do bazy
+    
     const { error: insertError } = await supabase.from('items').insert(newItem);
     if (insertError) throw insertError;
 
@@ -129,7 +128,7 @@ export default function AddItemScreen() {
   }
 };
 
-// Użytkownik zobaczy nowe kolekcje za każdym razem, bez restartu 
+
 useFocusEffect(
   useCallback(() => {
     const fetchCollections = async () => {
@@ -296,7 +295,7 @@ const styles = StyleSheet.create({
     padding: Spacing.medium,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: lightTheme.primary, // Używamy lightTheme, bo to kolor brandowy
+    borderColor: lightTheme.primary, 
     borderStyle: 'dashed',
     marginBottom: Spacing.medium,
   },

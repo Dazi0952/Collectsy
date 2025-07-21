@@ -1,4 +1,4 @@
-// app/collection/[id].tsx - POPRAWIONA WERSJA
+
 import { View, Text, StyleSheet, FlatList, Image, ActivityIndicator, Pressable } from 'react-native';
 import React, { useState, useCallback } from 'react';
 import { supabase } from '../../src/api/supabase';
@@ -43,7 +43,7 @@ export default function CollectionDetailScreen() {
       
       fetchCollectionItems();
 
-    }, [id]) // Zależność od 'id' kolekcji
+    }, [id]) 
   );
 
   if (loading) {
@@ -72,7 +72,7 @@ export default function CollectionDetailScreen() {
             <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Ta kolekcja jest pusta.</Text>
           </View>
         }
-        contentContainerStyle={{ flexGrow: 1 }} // Ważne, aby ListEmptyComponent był wyśrodkowany
+        contentContainerStyle={{ flexGrow: 1 }} 
       />
     </View>
   );

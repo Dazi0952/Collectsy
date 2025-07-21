@@ -1,4 +1,4 @@
-// app/settings.tsx
+
 import { View, Text, StyleSheet, Button, Alert, Switch } from 'react-native';
 import React from 'react';
 import { supabase } from '../src/api/supabase';
@@ -18,7 +18,7 @@ export default function SettingsScreen() {
     if (error) {
       Alert.alert("Błąd", "Nie udało się wylogować.");
     } else {
-      // 'replace' czyści historię nawigacji i przenosi do ekranu powitalnego
+      
       router.replace('/'); 
     }
   };
@@ -27,7 +27,7 @@ export default function SettingsScreen() {
     <View style={[styles.container, { backgroundColor: colors.surface }]}>
       <Stack.Screen options={{ 
           title: 'Ustawienia',
-          // Dynamiczne style dla nagłówka modala
+          
           headerStyle: { backgroundColor: colors.background },
           headerTitleStyle: { color: colors.text }
       }} />
@@ -49,7 +49,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.surface,
     padding: Spacing.medium,
-    justifyContent: 'space-between' // Rozmieszcza elementy
+    justifyContent: 'space-between' 
   },
   section: {
     flex: 1,

@@ -1,4 +1,4 @@
-// app/(tabs)/profile.tsx - POPRAWIONA I KOMPLETNA WERSJA
+
 import { View, Text, StyleSheet, FlatList, Image, ActivityIndicator, Pressable } from 'react-native';
 import React, { useState, useCallback } from 'react';
 import { supabase } from '../../src/api/supabase';
@@ -31,62 +31,16 @@ export default function ProfileScreen() {
   const { user, loading } = useAuth();
    const { theme } = useTheme();
   const colors = theme === 'light' ? lightTheme : darkTheme;
-/*
-  const [items, setItems] = useState<Item[]>([]);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [collections, setCollections] = useState<CollectionWithCover[]>([]);
-  const [refreshing, setRefreshing] = useState(false);
-
-  // Używamy useFocusEffect, aby odświeżać dane za każdym razem, gdy ekran jest widoczny
-  const fetchUserData = useCallback(async () => {
-    if (!user) {
-      setProfile(null);
-      setCollections([]);
-      return;
-    }
-    try {
-      const [profileResponse, collectionsResponse] = await Promise.all([
-        supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
-        supabase.rpc('get_collections_with_covers', { user_id_param: user.id })
-      ]);
-
-      if (profileResponse.error) throw profileResponse.error;
-      setProfile(profileResponse.data);
-
-      if (collectionsResponse.error) throw collectionsResponse.error;
-      setCollections(collectionsResponse.data || []);
-
-    } catch (error) {
-      console.error("Błąd podczas pobierania danych użytkownika:", error);
-    }
-  }, [user]);
-
-  // Hook do ładowania danych przy wejściu na ekran
-  useFocusEffect(
-    useCallback(() => {
-      setLoading(true);
-      fetchUserData().finally(() => setLoading(false));
-    }, [fetchUserData])
-  );
-
-  // Funkcja obsługująca "pull-to-refresh"
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await fetchUserData();
-    setRefreshing(false);
-  }, [fetchUserData]);
-*/
   if (loading) {
     return <ActivityIndicator size="large" color={colors.primary} style={{ flex: 1, backgroundColor: colors.background }} />;
   }
 
-  // Jeśli nie ma użytkownika po załadowaniu, nie renderuj nic (lub ekran błędu)
+  
   if (!user) {
     return null;
   }
 
-  // Jeśli jest użytkownik, renderuj komponent profilu z jego ID
+  
   return <UserProfile userId={user.id} />;
 }
 
@@ -127,10 +81,10 @@ const styles = StyleSheet.create({
   collectionContainer: {
   flex: 1,
   margin: Spacing.small,
-  aspectRatio: 1, // Zapewnia kwadratowy kształt
+  aspectRatio: 1, 
   borderRadius: 12,
-  overflow: 'hidden', // Ważne, aby zaokrąglić też obrazek
-  backgroundColor: Colors.surface, // Użyj dynamicznego koloru
+  overflow: 'hidden', 
+  backgroundColor: Colors.surface, 
 },
 collectionImage: {
   width: '100%',
@@ -141,7 +95,7 @@ collectionOverlay: {
   bottom: 0,
   left: 0,
   right: 0,
-  backgroundColor: 'rgba(0, 0, 0, 0.4)', // Półprzezroczyste czarne tło
+  backgroundColor: 'rgba(0, 0, 0, 0.4)', 
   padding: Spacing.small,
 },
 collectionName: {

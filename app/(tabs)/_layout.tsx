@@ -1,13 +1,9 @@
-// app/(tabs)/_layout.tsx
 import React from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontSize, Spacing, lightTheme, darkTheme } from '../../src/constants/theme';
 import { Pressable } from 'react-native';
 import { Tabs, useRouter } from 'expo-router';
 import { useTheme } from '../../src/context/ThemeContext';
-
-// Możesz zaimportować ikony, jeśli masz zainstalowane @expo/vector-icons
-// import { TabBarIcon } from '@/components/navigation/TabBarIcon';
 
 export default function TabLayout() {
   const { theme } = useTheme();
@@ -22,7 +18,7 @@ export default function TabLayout() {
                 },
     headerStyle: { backgroundColor: colors.background },
     headerTitleStyle: { color: colors.text },
-    headerTintColor: colors.primary, // Kolor strzałki "wstecz
+    headerTintColor: colors.primary, 
   }}>
       <Tabs.Screen
         name="profile"

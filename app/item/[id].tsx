@@ -1,4 +1,4 @@
-// app/item/[id].tsx - WERSJA Z PEŁNYMI SZCZEGÓŁAMI
+
 import { View, Text, StyleSheet, ActivityIndicator, Image, ScrollView, Dimensions, Button, Alert, Pressable, TextInput } from 'react-native';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLocalSearchParams, Stack, useRouter, Link } from 'expo-router';
@@ -9,7 +9,7 @@ import { lightTheme, darkTheme, Spacing, FontSize } from '../../src/constants/th
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from 'react-native/Libraries/NewAppScreen';
 
-// Definicja pełnego typu przedmiotu (bez zmian)
+
 type ItemDetails = {
   id: string;
   name: string;
@@ -29,7 +29,7 @@ type Comment = {
   id: string;
   content: string;
   created_at: string;
-  profiles: { // POJEDYNCZY OBIEKT, NIE TABLICA
+  profiles: { 
     username: string;
     avatar_url: string | null;
   } [] | null;
@@ -37,7 +37,7 @@ type Comment = {
 
 export default function ItemDetailScreen() {
   const { id } = useLocalSearchParams();
-  const { user } = useAuth(); // Pobieramy zalogowanego użytkownika
+  const { user } = useAuth(); 
   const router = useRouter();
   const [item, setItem] = useState<ItemDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -91,7 +91,7 @@ const handleAddComment = async () => {
   if (!user || newComment.trim() === '') return;
   
   const contentToPost = newComment.trim();
-  setNewComment(''); // Wyczyść pole od razu dla lepszego UX
+  setNewComment(''); 
   
 
   const { data, error } = await supabase
@@ -111,17 +111,17 @@ const handleAddComment = async () => {
     console.log("Odpowiedź z INSERT:", JSON.stringify(data, null, 2));
     
   if (error) {
-  console.error("Błąd podczas dodawania komentarza:", error); // <-- Dodaj ten log
-  Alert.alert("Błąd", `Nie udało się dodać komentarza: ${error.message}`); // <-- Pokaż prawdziwy błąd
+  console.error("Błąd podczas dodawania komentarza:", error); 
+  Alert.alert("Błąd", `Nie udało się dodać komentarza: ${error.message}`); 
   setNewComment(contentToPost);
   } else if (data) {
-  // Stwórz nowy obiekt, upewniając się, że `profiles` jest tablicą
+  
   const newCommentData: Comment = {
     ...data,
     profiles: Array.isArray(data.profiles) ? data.profiles : [data.profiles]
   };
   
-  // Dodaj nowy, ujednolicony komentarz do stanu
+  
   setComments(prevComments => [newCommentData, ...prevComments]);
   }
 };
@@ -132,18 +132,18 @@ const toggleLike = async () => {
     return;
   }
   
-  // Optymistyczna aktualizacja UI
+  
   setIsLiked(!isLiked);
   setLikeCount(prev => isLiked ? prev - 1 : prev + 1);
 
   if (isLiked) {
-    // Jeśli już jest polubione -> usuń polubienie
+    
     await supabase.from('likes').delete().match({ item_id: id, user_id: user.id });
   } else {
-    // Jeśli nie jest polubione -> dodaj polubienie
+    
     await supabase.from('likes').insert({ item_id: id, user_id: user.id });
   }
-  // Można dodać obsługę błędu i przywrócenie stanu UI w razie niepowodzenia
+  
 };
 
   if (loading) {
@@ -170,7 +170,7 @@ const toggleLike = async () => {
               Alert.alert("Błąd", "Nie udało się usunąć przedmiotu.");
             } else {
               Alert.alert("Sukces", "Przedmiot został usunięty.");
-              router.back(); // Wróć do poprzedniego ekranu
+              router.back(); 
             }
           }
         }
@@ -178,17 +178,17 @@ const toggleLike = async () => {
     );
   };
 
-  // === LOGIKA EDYCJI (na razie pusta) ===
+  
   const handleEdit = () => {
     if (!item) return;
-  // Nawiguj do ekranu edycji, przekazując ID jako parametr
+  
   router.push(`/item/edit?id=${item.id}`);
   };
 
   if (loading) return <ActivityIndicator size="large" color={colors.primary} style={[styles.centered, {backgroundColor: colors.background}]} />;
   if (!item) return <View style={styles.centered}><Text style={{color: colors.text}}>Nie znaleziono przedmiotu.</Text></View>;
 
-  // Sprawdzamy, czy zalogowany użytkownik jest właścicielem przedmiotu
+  
   const isOwner = user?.id === item.user_id;
 
   return (
@@ -238,7 +238,7 @@ const toggleLike = async () => {
   return (
     <View key={comment.id} style={styles.commentContainer}>
       <Image 
-        source={{ uri: authorProfile?.avatar_url || `https://api.dicebear.com/7.x/initials/png?seed=${avatarSeed}` }} 
+        source={{ uri: authorProfile?.avatar_url || `https://api.dicebear.com/7.x/initials/png?seed=${avatarSeed}` }}
         style={styles.commentAvatar} 
       />
       <View style={[styles.commentBubble, { backgroundColor: colors.surface }]}>
@@ -296,7 +296,7 @@ const toggleLike = async () => {
 
 const { width } = Dimensions.get('window');
 
-// === ZAKTUALIZOWANE STYLE ===
+
 const styles = StyleSheet.create({
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   container: { flex: 1, backgroundColor: 'white' },
@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#28a745', // Zielony kolor ceny
+    color: '#28a745', 
     marginBottom: 16,
   },
   description: {
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
   metaLabel: {
     fontSize: 16,
     color: 'gray',
-    width: 80, // Ustawiona szerokość dla wyrównania
+    width: 80, 
   },
   metaValue: {
     fontSize: 16,
@@ -352,7 +352,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   contentContainer: {
-    paddingBottom: 50, // Dodaje margines na dole, aby nic nie było ucięte
+    paddingBottom: 50, 
   },
   actionsContainer: {
   flexDirection: 'row',

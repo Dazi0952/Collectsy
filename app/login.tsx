@@ -1,4 +1,4 @@
-// app/login.tsx - WERSJA DLA SUPABASE
+
 import { Text, View, StyleSheet, TextInput, Pressable, Alert } from 'react-native';
 import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
@@ -21,7 +21,7 @@ export default function LoginScreen() {
     }
     setLoading(true);
 
-    // Tak wygląda logowanie w Supabase!
+    
     const { error } = await supabase.auth.signInWithPassword({
       email: email,
       password: password,
@@ -30,9 +30,9 @@ export default function LoginScreen() {
     if (error) {
       Alert.alert('Błąd logowania', error.message);
     } else {
-      // Logowanie udane! Przekierowujemy do głównej części aplikacji.
-      // 'replace' sprawia, że użytkownik nie może cofnąć się do ekranu logowania.
-      router.replace('/(tabs)/profile'); // Na razie ta ścieżka nie istnieje, ale to OK
+      
+      
+      router.replace('/(tabs)/profile'); 
     }
     setLoading(false);
   };
@@ -64,7 +64,7 @@ export default function LoginScreen() {
   );
 }
 
-// Użyjmy tych samych stylów co przy rejestracji
+
 const styles = StyleSheet.create({
     container: { flex: 1, justifyContent: 'center', padding: 16 },
     title: { fontSize: 28, fontWeight: 'bold', marginBottom: 24, textAlign: 'center' },

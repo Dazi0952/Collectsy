@@ -1,4 +1,4 @@
-// app/(tabs)/feed.tsx
+
 import { View, Text, StyleSheet, FlatList, Image, ActivityIndicator, Pressable, TextInput } from 'react-native';
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../src/api/supabase';
@@ -8,7 +8,7 @@ import { Colors , FontSize , Spacing, lightTheme, darkTheme } from '../../src/co
 import { useTheme } from '../../src/context/ThemeContext'
 
 
-// Użyjemy tego samego typu 'Item' co na ekranie profilu
+
 type Item = {
   id: string;
   name: string;
@@ -30,11 +30,11 @@ export default function FeedScreen() {
   const fetchPublicItems = async () => {
     setLoading(true);
     
-    // Pobieramy WSZYSTKIE przedmioty od WSZYSTKICH użytkowników
+    
     const { data, error } = await supabase
       .from('items')
-      .select('id, name, image_urls') // Pobieramy tylko potrzebne dane do siatki
-      .order('created_at', { ascending: false }); // Najnowsze na górze
+      .select('id, name, image_urls') 
+      .order('created_at', { ascending: false }); 
 
     if (error) {
       console.error(error);

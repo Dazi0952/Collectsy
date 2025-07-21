@@ -1,13 +1,11 @@
-// app/profile/[id].tsx
-import React from 'react';
-import { Text, View } from 'react-native';
-import UserProfile from '../../src/components/profile/UserProfile'; // Poprawna ścieżka
-import { useLocalSearchParams, Stack } from 'expo-router';
+import React from "react";
+import { Text, View } from "react-native";
+import UserProfile from "../../src/components/profile/UserProfile";
+import { useLocalSearchParams, Stack } from "expo-router";
 
 export default function PublicProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
-  // Jeśli z jakiegoś powodu ID nie zostało przekazane, pokaż błąd
   if (!id) {
     return (
       <View>
@@ -18,8 +16,7 @@ export default function PublicProfileScreen() {
 
   return (
     <>
-      {/* Stack.Screen pozwala nam dynamicznie ustawić tytuł nagłówka */}
-      <Stack.Screen options={{ title: 'Profil użytkownika' }} /> 
+      <Stack.Screen options={{ title: "Profil użytkownika" }} />
       <UserProfile userId={id} />
     </>
   );

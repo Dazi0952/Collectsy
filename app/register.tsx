@@ -1,7 +1,7 @@
 import { Text, View, StyleSheet, TextInput, Pressable, Alert } from 'react-native';
 import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
-import { Colors , FontSize , Spacing, lightTheme, darkTheme } from '../src/constants/theme'
+import { lightTheme, darkTheme } from '../src/constants/theme'
 import { useTheme } from '../src/context/ThemeContext'
 import { supabase } from '../src/api/supabase';
 
@@ -12,7 +12,7 @@ export default function RegisterScreen() {
   const router = useRouter();
   const [username, setUsername] = useState('');
   const { theme } = useTheme();
-    const colors = theme === 'light' ? lightTheme : darkTheme;
+  const colors = theme === 'light' ? lightTheme : darkTheme;
 
   const handleRegister = async () => {
     if (!email || !password || !username) {
@@ -21,7 +21,6 @@ export default function RegisterScreen() {
     }
     setLoading(true);
 
-    // 1. Zarejestruj użytkownika w systemie Auth
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: email,
       password: password,
@@ -34,26 +33,23 @@ export default function RegisterScreen() {
     }
 
     if (!authData.user) {
-        Alert.alert('Błąd', 'Nie udało się utworzyć użytkownika.');
-        setLoading(false);
-        return;
+      Alert.alert('Błąd', 'Nie udało się utworzyć użytkownika.');
+      setLoading(false);
+      return;
     }
 
-    // 2. Stwórz wpis w tabeli 'profiles'
     const { error: profileError } = await supabase.from('profiles').insert({
-      id: authData.user.id, // Użyj ID z Auth jako klucza głównego i obcego
-      username: username.toLowerCase().trim(), // Zapisz nazwę małymi literami i bez spacji
+      id: authData.user.id,
+      username: username.toLowerCase().trim(),
     });
 
     if (profileError) {
-      // Jeśli tu wystąpi błąd (np. nazwa zajęta), to jest problem
-      // W pełnej aplikacji trzeba by usunąć użytkownika z Auth
       Alert.alert('Błąd', 'Nie udało się zapisać profilu: ' + profileError.message);
     } else {
       Alert.alert('Sukces!', 'Sprawdź swoją skrzynkę mailową, aby potwierdzić rejestrację.');
       router.back();
     }
-    
+
     setLoading(false);
   };
 
@@ -91,11 +87,10 @@ export default function RegisterScreen() {
     </View>
   );
 }
-// Style są takie same jak poprzednio
 const styles = StyleSheet.create({
-    container: { flex: 1, justifyContent: 'center', padding: 16 },
-    title: { fontSize: 28, fontWeight: 'bold', marginBottom: 24, textAlign: 'center' },
-    input: { height: 50, borderColor: 'gray', borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, marginBottom: 16, fontSize: 16 },
-    button: { backgroundColor: '#007AFF', paddingVertical: 12, borderRadius: 8, alignItems: 'center', marginTop: 16 },
-    buttonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
+  container: { flex: 1, justifyContent: 'center', padding: 16 },
+  title: { fontSize: 28, fontWeight: 'bold', marginBottom: 24, textAlign: 'center' },
+  input: { height: 50, borderColor: 'gray', borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, marginBottom: 16, fontSize: 16 },
+  button: { backgroundColor: '#007AFF', paddingVertical: 12, borderRadius: 8, alignItems: 'center', marginTop: 16 },
+  buttonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
 });
