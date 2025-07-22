@@ -57,15 +57,15 @@ csharp
 Kopiuj
 Edytuj
 Collectsy/
-├── public/           # Pliki statyczne (HTML, ikony)\n
-├── src/              # Główne źródła (komponenty, style, logika)\n
-│   ├── components/   # Reużywalne komponenty UI\n
-│   ├── pages/        # Główne widoki/kolekcje\n
-│   ├── hooks/        # Własne hooki Reacta\n
-│   ├── utils/        # Pomocnicze funkcje\n
-│   └── App.js        # Główny komponent aplikacji\n
-├── package.json      # Informacje o projekcie i zależnościach\n
-└── README.md         # Ten plik\n
+├── public/           # Pliki statyczne (HTML, ikony)
+├── src/              # Główne źródła (komponenty, style, logika)
+│   ├── components/   # Reużywalne komponenty UI
+│   ├── pages/        # Główne widoki/kolekcje
+│   ├── hooks/        # Własne hooki Reacta
+│   ├── utils/        # Pomocnicze funkcje
+│   └── App.js        # Główny komponent aplikacji
+├── package.json      # Informacje o projekcie i zależnościach
+└── README.md         # Ten plik
 🌱 Użyte technologie
 React – biblioteka do budowy interfejsu użytkownika
 
