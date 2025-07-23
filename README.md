@@ -10,7 +10,7 @@
 - Przeglądanie listy elementów z opisami
 - Sortowanie i tagowanie przedmiotów
 - Intuicyjny, responsywny interfejs
-- baza danych (Supabase)
+- Baza danych (Supabase)
 
 ---
 
